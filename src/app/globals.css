@@ -471,7 +471,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); outlin
   gap: 5px;
   border: 1px solid var(--outline-variant);
   background: var(--on-background);
-  color: var(--on-background);
+  color: var(--on-primary);
   padding: 6px 8px;
   font-size: 11px;
   font-weight: 700;
