@@ -9,7 +9,7 @@ import { maskPhone } from "@/lib/format";
 import { getPrimaryImage, normalizeCategories, normalizeImageUrl, normalizeImages } from "@/lib/normalize";
 import { applyPublishWindow, computeContentStatus, splitByStatus, validatePublishWindow } from "@/lib/publish";
 import type { AdminRole, PublishFields } from "@/lib/types";
-import { Badge } from "../ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { ImageUploader } from "./ImageUploader";
@@ -412,7 +412,7 @@ function ResourceSummary({ item, resource }: { item: Item; resource: string }) {
         <div>
           <strong>{String(item.name ?? item.title ?? item.id)}</strong>
           <p className="line-clamp two-line multiline">{String(item.bio ?? "")}</p>
-          <div className="tag-row"><span className="tag">{String(item.pin ?? "-")}</span>{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+          <div className="tag-row"><span className="tag"> {String(item.pin ?? "-")}</span>{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
         </div>
       </div>
     );
