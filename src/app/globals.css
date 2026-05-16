@@ -470,8 +470,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); outlin
   align-items: center;
   gap: 5px;
   border: 1px solid var(--outline-variant);
-  background: var(--on-background);
-  color: var(--on-primary);
+  background: var(--on-primary);
+  color: var(--on-background);
   padding: 6px 8px;
   font-size: 11px;
   font-weight: 700;
@@ -573,7 +573,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); outlin
 .metric-card span,
 .admin-row span,
 .mini-row small {
-  color: var(--on-primary);
+  color: var(--on-background);
   font-size: 11px;
   font-weight: 600;
 }
