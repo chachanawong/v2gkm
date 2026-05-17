@@ -23,6 +23,7 @@ export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: 
     }
     localStorage.removeItem(admin ? "v2g_admin" : "v2g_user");
     localStorage.removeItem(admin ? "v2g_admin_token" : "v2g_user_token");
+    localStorage.removeItem(admin ? "v2g_admin_last_seen" : "v2g_user_last_seen");
     window.dispatchEvent(new Event("v2g-session"));
     location.href = admin ? "/admin/login" : "/";
   }
@@ -68,7 +69,7 @@ function AdminMenuContent({ role, logout }: { role: AdminRole; logout: () => voi
           {canAccessResource(role, "knowledge") ? <Link href="/admin/knowledge">Knowledge</Link> : null}
           {canAccessResource(role, "news") ? <Link href="/admin/news">News</Link> : null}
           {canAccessResource(role, "profiles") ? <Link href="/admin/profiles">Profiles</Link> : null}
-          {canAccessResource(role, "categories") ? <Link href="/admin/categories">Categories</Link> : null}
+          {isAdmin && canAccessResource(role, "categories") ? <Link href="/admin/categories">Categories</Link> : null}
         </div>
       ) : null}
       {canAccount ? (
