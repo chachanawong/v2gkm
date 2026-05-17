@@ -60,7 +60,6 @@ export default function KnowledgePage() {
           <button className="card-button" type="button" onClick={() => setSelected(item)} key={item.id}>
             <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span><span>{item.viewCount.toLocaleString()} views</span></>}>
             <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
-            <p className="line-clamp two-line">{item.youtubeUrl}</p>
             <span className="muted-link">View Details</span>
             </ContentCard>
           </button>
