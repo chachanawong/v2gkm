@@ -38,7 +38,7 @@ const sheetHeaders: Record<SheetName, string[]> = {
   ],
   profiles: ["id", "pin", "name", "bio", "position", "visibility", "images", "status", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories"],
   news: ["id", "title", "body", "images", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories"],
-  categories: ["id", "name", "active", "level"],
+  categories: ["id", "name", "active"],
   audit_logs: ["id", "actor", "role", "action", "resource", "at"],
   preview_tokens: ["token", "resourceType", "resourceId", "expiresAt", "data"],
 };
@@ -125,9 +125,6 @@ function normalizeSheetItem(item: Record<string, unknown>) {
 
   if ("images" in item) {
     item.images = normalizeImages(item.images);
-  }
-  if ("level" in item) {
-    item.level = item.level === "secret" ? "secret" : "public";
   }
 
   if (process.env.NODE_ENV === "development") {

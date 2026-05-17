@@ -76,6 +76,7 @@ export default function HomePage() {
           <button className="card-button" type="button" onClick={() => setSelected({ type: "knowledge", item })} key={item.id}>
             <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span></>}>
               <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+              <p className="line-clamp two-line">{item.youtubeUrl}</p>
             </ContentCard>
           </button>
         ))}
@@ -104,7 +105,7 @@ export default function HomePage() {
         {listModal === "knowledge" ? <CategoryList items={knowledge} renderItem={(item) => (
           <button className="card-button" type="button" onClick={() => { setListModal(null); setSelected({ type: "knowledge", item }); }} key={item.id}>
             <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span></>}>
-              <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+              <p className="line-clamp two-line">{item.youtubeUrl}</p>
             </ContentCard>
           </button>
         )} /> : null}

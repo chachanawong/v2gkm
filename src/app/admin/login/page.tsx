@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { markSessionActive } from "@/lib/client-session";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -31,7 +30,6 @@ export default function AdminLoginPage() {
     }
     localStorage.setItem("v2g_admin", JSON.stringify(data.admin));
     localStorage.setItem("v2g_admin_token", data.token);
-    markSessionActive("admin");
     window.dispatchEvent(new Event("v2g-session"));
     location.href = "/admin/dashboard";
   }

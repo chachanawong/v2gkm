@@ -5,7 +5,7 @@ import { listSheet } from "@/lib/google-sheets";
 export default async function AdminCategoriesPage() {
   const items = await listSheet("categories");
   return (
-    <AdminShell allowed={["Admin"]}>
+    <AdminShell allowed={["Admin", "Content"]}>
       <AdminResourceManager
         title="Categories"
         resource="categories"
@@ -13,7 +13,6 @@ export default async function AdminCategoriesPage() {
         publishable={false}
         fields={[
           { key: "name", label: "Category name" },
-          { key: "level", label: "Level", type: "select", options: ["public", "secret"], adminOnly: true },
           { key: "active", label: "Active", type: "checkbox" },
         ]}
       />

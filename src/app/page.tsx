@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { markSessionActive } from "@/lib/client-session";
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
@@ -28,7 +27,6 @@ export default function LoginPage() {
     }
     localStorage.setItem("v2g_user", JSON.stringify(data.user));
     localStorage.setItem("v2g_user_token", data.token);
-    markSessionActive("user");
     window.dispatchEvent(new Event("v2g-session"));
     location.href = "/home";
   }

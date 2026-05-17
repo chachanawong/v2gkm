@@ -5,7 +5,7 @@ import type { Category, Profile } from "@/lib/types";
 
 export default async function AdminProfilesPage() {
   const data = await batchListSheets(["profiles", "categories"]) as { profiles: Profile[]; categories: Category[] };
-  const categoryOptions = data.categories.filter((item) => item.active !== false && item.level !== "secret").map((item) => item.name);
+  const categoryOptions = data.categories.filter((item) => item.active !== false).map((item) => item.name);
   return (
     <AdminShell allowed={["Admin", "Content"]}>
       <AdminResourceManager
