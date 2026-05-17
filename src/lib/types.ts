@@ -25,6 +25,7 @@ export type Category = {
   id: string;
   name: string;
   active: boolean;
+  level?: "public" | "secret";
 };
 
 export type PublishFields = {
