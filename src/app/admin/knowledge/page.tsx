@@ -5,7 +5,7 @@ import type { Category, Knowledge } from "@/lib/types";
 
 export default async function AdminKnowledgePage() {
   const data = await batchListSheets(["knowledge", "categories"]) as { knowledge: Knowledge[]; categories: Category[] };
-  const categoryOptions = data.categories.filter((item) => item.active !== false).map((item) => item.name);
+  const categoryOptions = data.categories.filter((item) => item.active !== false && item.level !== "secret").map((item) => item.name);
   return (
     <AdminShell allowed={["Admin", "Content"]}>
       <AdminResourceManager
