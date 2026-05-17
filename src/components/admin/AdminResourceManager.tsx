@@ -191,7 +191,7 @@ export function AdminResourceManager({
         Authorization: `Bearer ${getAdminToken()}`,
         "x-admin-name": admin?.name ?? adminRole,
       },
-      body: JSON.stringify({ id: `categories-${crypto.randomUUID()}`, name, active: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }),
+      body: JSON.stringify({ id: `categories-${crypto.randomUUID()}`, name, active: true, level: "public", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }),
     }).catch(() => undefined)));
   }
 
@@ -440,6 +440,7 @@ function ResourceSummary({ item, resource }: { item: Item; resource: string }) {
     return (
       <div className="row-summary row-summary-category">
         <strong>{String(item.name ?? item.id)}</strong>
+        <span>{String(item.level ?? "public")}</span>
       </div>
     );
   }
