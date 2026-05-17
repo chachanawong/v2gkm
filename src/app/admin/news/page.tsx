@@ -5,7 +5,7 @@ import type { Category, News } from "@/lib/types";
 
 export default async function AdminNewsPage() {
   const data = await batchListSheets(["news", "categories"]) as { news: News[]; categories: Category[] };
-  const categoryOptions = data.categories.filter((item) => item.active !== false).map((item) => item.name);
+  const categoryOptions = data.categories.filter((item) => item.active !== false && item.level !== "secret").map((item) => item.name);
   return (
     <AdminShell allowed={["Admin", "Content"]}>
       <AdminResourceManager
