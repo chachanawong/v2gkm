@@ -19,7 +19,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ reso
   if (!isResource(resource)) return Response.json({ error: "Unknown resource" }, { status: 404 });
   const denied = assertAdminRequest(request, resource);
   if (denied) return denied;
-  return Response.json({ items: await listResource(resource) });
+  const items = await listResource(resource);
+  if (resource === "categories") {
+    const session = getAdminSession(request);
+    return Response.json({
+      items: session?.role === "Admin" ? items : items.filter((item) => (item as Record<string, unknown>).level !== "secret"),
+    });
+  }
+  return Response.json({ items });
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ resource: string }> }) {
@@ -30,6 +37,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ res
   if (denied) return denied;
   const payload = await request.json();
   const previous = (await listResource(resource)).find((row) => String((row as Record<string, unknown>).id) === String(payload.id));
+  if (resource === "categories" && (previous as Record<string, unknown> | undefined)?.level === "secret" && session?.role !== "Admin") {
+    return Response.json({ error: "Admin role required for secret categories" }, { status: 403 });
+  }
   let item: Record<string, unknown>;
   try {
     item = await normalizeAdminPayload(resource, payload, session?.role);
@@ -61,6 +71,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ r
   if (denied) return denied;
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
+  if (resource === "categories" && session?.role !== "Admin") {
+    const item = (await listResource(resource)).find((row) => String((row as Record<string, unknown>).id) === id) as Record<string, unknown> | undefined;
+    if (item?.level === "secret") {
+      return Response.json({ error: "Admin role required for secret categories" }, { status: 403 });
+    }
+  }
   const deleted = await deleteResource(resource, id);
   await writeAuditLog({ actor: request.headers.get("x-admin-name") ?? session?.role ?? "admin", role: "admin", action: "delete", resource: `${resource}:${id}` });
   return Response.json({ deleted });
@@ -87,6 +103,7 @@ async function normalizeAdminPayload(resource: ResourceType, item: Record<string
   if (resource === "categories") {
     next.name = String(next.name ?? "").trim();
     next.active = next.active !== false;
+    next.level = role === "Admin" && next.level === "secret" ? "secret" : "public";
   }
   if (resource === "users" || resource === "admins") {
     if (role !== "Admin") delete next.active;
