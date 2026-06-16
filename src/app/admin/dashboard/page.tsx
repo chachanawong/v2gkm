@@ -11,9 +11,9 @@ export default async function AdminDashboardPage() {
     profiles: Profile[];
     audit_logs: AuditLog[];
   };
-  const distribution = data.users.reduce<Record<"general" | "silver" | "platinum", number>>(
+  const distribution = data.users.reduce<Record<string, number>>(
     (acc, user) => ({ ...acc, [user.membership]: (acc[user.membership] ?? 0) + 1 }),
-    { general: 0, silver: 0, platinum: 0 },
+    {},
   );
   const max = Math.max(...Object.values(distribution), 1);
 

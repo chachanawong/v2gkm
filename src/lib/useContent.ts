@@ -50,6 +50,8 @@ export function useContent<T>(type: "knowledge" | "news" | "profiles" | "categor
   return { items, loading: !membership || loading };
 }
 
+const MIN_LOADING_MS = 600;
+
 export function useContentBundle(membership?: Membership) {
   const key = `all:${membership}`;
   const cached = bundleCache.get(key);
@@ -61,6 +63,8 @@ export function useContentBundle(membership?: Membership) {
     if (!membership) return;
     const current = bundleCache.get(key);
     if (current && current.expiresAt > Date.now()) return;
+    const startedAt = Date.now();
+    setLoading(true);
     fetch("/api/content/all", {
       headers: getUserToken() ? { Authorization: `Bearer ${getUserToken()}` } : {},
     })
@@ -81,9 +85,11 @@ export function useContentBundle(membership?: Membership) {
           cache.set(`${type}:${membership}`, { items: safeNext[type], expiresAt: Date.now() + ttl });
         });
         setData((current) => (safeNext.knowledge.length || safeNext.news.length || safeNext.profiles.length || current === null ? safeNext : current));
-        setLoading(false);
+        const remaining = MIN_LOADING_MS - (Date.now() - startedAt);
+        const finish = () => active && setLoading(false);
+        if (remaining > 0) setTimeout(finish, remaining); else finish();
       })
-      .catch(() => active && setLoading(false));
+      .catch(() => { if (active) setLoading(false); });
     return () => {
       active = false;
     };

@@ -2,13 +2,13 @@
 
 import { ExternalLink, LayoutGrid, LayoutList } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/shared/AppShell";
 import { ContentCard, VisibilityBadge } from "@/components/shared/ContentCard";
 import { HighlightBanner } from "@/components/shared/HighlightBanner";
+import { ImageCarousel } from "@/components/shared/ImageCarousel";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { useStoredMembership } from "@/lib/client-session";
 import { getPrimaryImage, normalizeCategories, normalizeImageUrl, normalizeImages } from "@/lib/normalize";
 import { toThaiCategory } from "@/lib/categoryTh";
@@ -47,6 +47,13 @@ export default function HomePage() {
   const [listModal, setListModal] = useState<ListModal | null>(null);
   const { data, loading } = useContentBundle(membership);
   const readNews = useLocalStorageSet("v2g_read_news");
+  const [initializing, setInitializing] = useState(true);
+  const initTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    initTimer.current = setTimeout(() => setInitializing(false), 400);
+    return () => { if (initTimer.current) clearTimeout(initTimer.current); };
+  }, []);
+  const showOverlay = initializing || loading;
   const normalizedQuery = query.trim().toLowerCase();
 
   const news = useMemo(() => {
@@ -91,6 +98,15 @@ export default function HomePage() {
 
   return (
     <AppShell>
+      {showOverlay ? (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "grid", placeItems: "center", background: "rgba(251,251,251,0.82)", backdropFilter: "blur(3px)" }} aria-live="polite" role="status">
+          <div className="loading-card">
+            <span className="loading-spinner" />
+            <strong>Loading</strong>
+            <small>กำลังโหลดข้อมูล</small>
+          </div>
+        </div>
+      ) : null}
       <section className="section-head">
         <div>
           <p className="eyebrow">Home</p>
@@ -98,7 +114,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {loading ? <Skeleton rows={4} /> : null}
       {!loading && highlights.length ? <HighlightBanner slides={highlights} /> : null}
 
       {/* Section tab buttons */}
@@ -163,13 +178,24 @@ export default function HomePage() {
       {/* Active tab content */}
       {activeTab === "news" ? (
         <HomeSection viewMode={viewMode}>
-          {news.slice(0, 4).map((item) => (
-            <button className="card-button" type="button" onClick={() => { readNews.mark(item.id); setSelected({ type: "news", item }); }} key={item.id}>
-              <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} />{isNew(item) ? <span style={{ color: "var(--success)", fontSize: 10, fontWeight: 700 }}>NEW</span> : null}{!readNews.has(item.id) ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", display: "inline-block" }} /> : null}</>} imageTags={normalizeCategories(item.categories).map(toThaiCategory)}>
-                <p className="line-clamp multiline">{item.body}</p>
-              </ContentCard>
-            </button>
-          ))}
+          {news.slice(0, 4).map((item) => {
+            const event = parseNewsEvent(item);
+            return (
+              <button className="card-button" type="button" onClick={() => { readNews.mark(item.id); setSelected({ type: "news", item }); }} key={item.id}>
+                <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} />{isNew(item) ? <span style={{ color: "var(--success)", fontSize: 10, fontWeight: 700 }}>NEW</span> : null}{!readNews.has(item.id) ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", display: "inline-block" }} /> : null}</>} imageTags={normalizeCategories(item.categories).map(toThaiCategory)}>
+                  {event.date || event.time || event.channel ? (
+                    <div className="news-event-info">
+                      {event.date ? <span>📅 {event.date}</span> : null}
+                      {event.time ? <span>⏰ {event.time}</span> : null}
+                      {event.channel ? <span>📍 {event.channel}</span> : null}
+                    </div>
+                  ) : (
+                    <p className="line-clamp multiline">{item.body}</p>
+                  )}
+                </ContentCard>
+              </button>
+            );
+          })}
         </HomeSection>
       ) : null}
 
@@ -252,12 +278,20 @@ function selectedTitle(selected: SelectedItem | null) {
 function SelectedDetail({ selected }: { selected: SelectedItem }) {
   if (selected.type === "news") {
     const item = selected.item;
+    const event = parseNewsEvent(item);
     return (
       <div className="knowledge-preview">
+        <ImageCarousel images={normalizeImages(item.images)} title={item.title} />
         <div className="card-meta"><VisibilityBadge value={item.visibility} /></div>
+        {event.date || event.time || event.channel ? (
+          <div className="news-event-info" style={{ margin: "6px 0" }}>
+            {event.date ? <span>📅 {event.date}</span> : null}
+            {event.time ? <span>⏰ {event.time}</span> : null}
+            {event.channel ? <span>📍 {event.channel}</span> : null}
+          </div>
+        ) : null}
         <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
         <p className="multiline">{item.body}</p>
-        <ImageGrid images={normalizeImages(item.images)} title={item.title} />
       </div>
     );
   }
@@ -320,6 +354,26 @@ function HomeSection({ children, viewMode = "gallery" }: { children: ReactNode; 
 
 function trackKnowledgeView(id: string) {
   fetch(`/api/knowledge/${encodeURIComponent(id)}/view`, { method: "POST", keepalive: true }).catch(() => undefined);
+}
+
+function parseNewsEvent(item: News) {
+  if (item.eventDate || item.eventTime || item.eventChannel) {
+    return {
+      date: item.eventDate ?? null,
+      time: item.eventTime ?? null,
+      channel: item.eventChannel ?? null,
+    };
+  }
+  const body = item.body;
+  const dateMatch = body.match(/🗓️?\s*(วัน[^\n]+)/);
+  const timeMatch = body.match(/⏰\s*เวลา\s*([^\n]+)/);
+  const hasZoom = /zoom\.us/i.test(body);
+  const hasTipco = /ทิปโก้/i.test(body);
+  return {
+    date: dateMatch?.[1]?.trim() ?? null,
+    time: timeMatch?.[1]?.trim() ?? null,
+    channel: hasZoom ? "Zoom" : hasTipco ? "Tipco Tower" : null,
+  };
 }
 
 function CategoryList<T extends { id: string; categories?: string[] }>({ items, renderItem }: { items: T[]; renderItem: (item: T) => ReactNode }) {

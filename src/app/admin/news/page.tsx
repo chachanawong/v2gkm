@@ -13,10 +13,13 @@ export default async function AdminNewsPage() {
         resource="news"
         items={data.news}
         fields={[
-          { key: "title", label: "Title" },
-          { key: "body", label: "Detail", type: "textarea" },
+          { key: "title", label: "Title", required: true },
+          { key: "eventDate", label: "วันที่จัดงาน", required: true, placeholder: "เช่น วันเสาร์ที่ 16 พฤษภาคม 2569" },
+          { key: "eventTime", label: "เวลา", required: true, placeholder: "เช่น 14.30 - 17.00 น." },
+          { key: "eventChannel", label: "ช่องทาง", required: true, placeholder: "เช่น Tipco Tower / Zoom" },
+          { key: "body", label: "รายละเอียด", type: "textarea", required: true },
           { key: "categories", label: "Category Tags", options: categoryOptions },
-          { key: "images", label: "Images" },
+          { key: "images", label: "Images", required: true },
           { key: "visibility", label: "Visibility", type: "select" },
         ]}
       />

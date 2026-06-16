@@ -10,7 +10,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getStoredMembership, useStoredMembership } from "@/lib/client-session";
 import { useLocalStorageList, useLocalStorageSet } from "@/lib/useLocalStorage";
-import { getPrimaryImage, normalizeCategories, normalizeImageUrl } from "@/lib/normalize";
+import { getPrimaryImage, normalizeCategories } from "@/lib/normalize";
 import { useContent } from "@/lib/useContent";
 import { canAccess } from "@/lib/visibility";
 import type { Category, Knowledge } from "@/lib/types";
@@ -124,15 +124,11 @@ export default function KnowledgePage() {
       <Modal open={Boolean(selected)} title={selected?.title ?? "Knowledge"} onClose={() => setSelected(null)}>
         {selected ? (
           <div className="knowledge-preview">
-            <div className="card-image">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={normalizeImageUrl(selected.thumbnail)} alt={selected.title} onError={(e) => e.currentTarget.parentElement?.classList.add("image-placeholder")} />
-            </div>
+            <VideoEmbed youtubeId={selected.youtubeId} youtubeUrl={selected.youtubeUrl} title={selected.title} onView={() => trackView(selected.id)} />
             <div className="card-meta"><VisibilityBadge value={selected.visibility} /><span>{selected.uploadDate}</span><span>{selected.viewCount.toLocaleString()} views</span></div>
             <div className="tag-row">{normalizeCategories(selected.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
-            <p className="multiline">{selected.title}</p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <a href={selected.youtubeUrl} target="_blank" rel="noreferrer" onClick={() => trackView(selected.id)}>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <a href={selected.youtubeUrl || `https://www.youtube.com/watch?v=${selected.youtubeId}`} target="_blank" rel="noreferrer">
                 <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>เปิด YouTube</Button>
               </a>
               <Button size="sm" variant="ghost" onClick={() => bookmarks.toggle(selected.id)}>
@@ -148,4 +144,31 @@ export default function KnowledgePage() {
 
 function trackView(id: string) {
   fetch(`/api/knowledge/${encodeURIComponent(id)}/view`, { method: "POST", keepalive: true }).catch(() => undefined);
+}
+
+function extractYoutubeId(url: string): string {
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+  return m?.[1] ?? "";
+}
+
+function VideoEmbed({ youtubeId, youtubeUrl, title, onView }: { youtubeId: string; youtubeUrl: string; title: string; onView: () => void }) {
+  const vid = youtubeId || extractYoutubeId(youtubeUrl);
+  if (!vid) {
+    return (
+      <div style={{ background: "var(--surface-container)", borderRadius: "var(--radius)", padding: "32px 16px", textAlign: "center", color: "var(--secondary)", fontSize: 13, marginBottom: 12 }}>
+        ไม่มีลิ้งค์วิดีโอ
+      </div>
+    );
+  }
+  return (
+    <div style={{ position: "relative", paddingTop: "56.25%", background: "#000", borderRadius: "var(--radius)", overflow: "hidden", marginBottom: 12 }} onClick={onView}>
+      <iframe
+        src={`https://www.youtube.com/embed/${vid}`}
+        title={title}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+      />
+    </div>
+  );
 }

@@ -10,6 +10,7 @@ export type User = {
   membership: Membership;
   uplinePlatinum?: string;
   active?: boolean;
+  loginPin?: string;
 };
 
 export type Admin = {
@@ -51,6 +52,9 @@ export type News = PublishFields & {
   id: string;
   title: string;
   body: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventChannel?: string;
   images: string[];
   categories?: string[];
   createdAt: string;
@@ -76,6 +80,16 @@ export type AuditLog = {
   action: string;
   resource: string;
   at: string;
+};
+
+export type UserPin = {
+  phone: string;
+  loginPin: string;
+};
+
+export type Register = {
+  phone: string;
+  loginpin: string;
 };
 
 export type PreviewToken = {

@@ -5,6 +5,25 @@ import { useId, useRef, useState } from "react";
 import { getAdminToken } from "@/lib/client-session";
 import { normalizeImageUrl } from "@/lib/normalize";
 
+function ImageWithSize({ src, onRemove }: { src: string; onRemove: () => void }) {
+  const [size, setSize] = useState<string | null>(null);
+  return (
+    <figure className="upload-preview">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={normalizeImageUrl(src)}
+        alt=""
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          setSize(`${img.naturalWidth}×${img.naturalHeight}`);
+        }}
+      />
+      <button type="button" onClick={onRemove} title="Remove image"><X size={13} /></button>
+      {size ? <span className="image-size-label">{size}</span> : null}
+    </figure>
+  );
+}
+
 export function ImageUploader({
   name,
   value,
@@ -76,13 +95,7 @@ export function ImageUploader({
       {value.length ? (
         <div className="upload-preview-grid">
           {value.map((url, index) => (
-            <figure className="upload-preview" key={`${url}-${index}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={normalizeImageUrl(url)} alt="" />
-              <button type="button" onClick={() => remove(index)} title="Remove image">
-                <X size={13} />
-              </button>
-            </figure>
+            <ImageWithSize key={`${url}-${index}`} src={url} onRemove={() => remove(index)} />
           ))}
         </div>
       ) : null}

@@ -2,7 +2,7 @@ import { getGoogleAccessToken, hasGoogleServiceAccountConfig } from "./google-au
 import { db } from "./mock-data";
 import { normalizeCategories, normalizeImages } from "./normalize";
 import { applyPublishWindow } from "./publish";
-import type { Admin, AuditLog, Category, Event, EventRegistration, Knowledge, Lesson, LearningPath, News, PreviewToken, Profile, ResourceType, User, UserProgress } from "./types";
+import type { Admin, AuditLog, Category, Event, EventRegistration, Knowledge, Lesson, LearningPath, News, PreviewToken, Profile, Register, ResourceType, User, UserPin, UserProgress } from "./types";
 
 type SheetMap = {
   users: User;
@@ -18,16 +18,18 @@ type SheetMap = {
   user_progress: UserProgress;
   audit_logs: AuditLog;
   preview_tokens: PreviewToken;
+  user_pins: UserPin;
+  register: Register;
 };
 
 type SheetName = keyof SheetMap;
 
 const sheetHeaders: Record<SheetName, string[]> = {
-  users: ["id", "name", "phone", "membership", "uplinePlatinum", "active"],
+  users: ["id", "name", "phone", "membership", "uplinePlatinum", "active", "loginPin"],
   admins: ["id", "name", "email", "role", "password", "active"],
   knowledge: ["id", "title", "youtubeUrl", "youtubeId", "thumbnail", "categories", "uploadDate", "viewCount", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt"],
   profiles: ["id", "pin", "name", "bio", "position", "visibility", "images", "status", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories"],
-  news: ["id", "title", "body", "images", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories", "pinned"],
+  news: ["id", "title", "body", "eventDate", "eventTime", "eventChannel", "images", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories", "pinned"],
   categories: ["id", "name", "active"],
   events: ["id", "title", "description", "eventType", "startDate", "endDate", "location", "capacity", "images", "visibility", "status", "pinned", "createdAt", "updatedAt"],
   event_registrations: ["id", "eventId", "userId", "userName", "userPhone", "status", "createdAt"],
@@ -36,6 +38,8 @@ const sheetHeaders: Record<SheetName, string[]> = {
   user_progress: ["id", "userId", "lessonId", "pathId", "completed", "quizScore", "completedAt"],
   audit_logs: ["id", "actor", "role", "action", "resource", "at"],
   preview_tokens: ["token", "resourceType", "resourceId", "expiresAt", "data"],
+  user_pins: ["phone", "loginPin"],
+  register: ["phone", "loginpin"],
 };
 
 const resourceToSheet: Record<ResourceType, SheetName> = {
@@ -54,8 +58,74 @@ const sheetsScope = "https://www.googleapis.com/auth/spreadsheets";
 const readCache = new Map<SheetName, { rows: unknown[]; expiresAt: number }>();
 const readTtl = 15_000;
 
+function hasScriptConfig() {
+  return Boolean(process.env.GOOGLE_SCRIPT_URL && process.env.GOOGLE_SCRIPT_SECRET);
+}
+
+function hasBoConfig() {
+  return Boolean(process.env.BO_SHEETS_ID);
+}
+
+async function gvizGet(sheetId: string, gid: string): Promise<Record<string, unknown>[]> {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  const res = await fetch(url, { cache: "no-store", signal: controller.signal }).finally(() => clearTimeout(timeout));
+  if (!res.ok) throw new Error(`gviz fetch failed: ${res.status}`);
+  const text = await res.text();
+  const match = text.match(/google\.visualization\.Query\.setResponse\((.+)\);?\s*$/s);
+  if (!match) throw new Error("gviz parse error");
+  const data = JSON.parse(match[1]) as { table: { cols: { label: string }[]; rows: { c: ({ v: unknown } | null)[] }[] } };
+  const cols = data.table.cols.map((c) => c.label);
+  return data.table.rows.map((row) =>
+    cols.reduce((acc, col, i) => ({ ...acc, [col]: row.c[i]?.v ?? "" }), {} as Record<string, unknown>),
+  );
+}
+
+function mapBoRowToUser(row: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    membership: row.pin || "general",
+    uplinePlatinum: row.upline,
+    active: row.status === "active",
+  };
+}
+
 function hasSheetsConfig() {
   return Boolean(process.env.GOOGLE_SHEETS_ID && hasGoogleServiceAccountConfig());
+}
+
+async function scriptGet<T>(params: Record<string, string>): Promise<T> {
+  const url = process.env.GOOGLE_SCRIPT_URL!;
+  const secret = process.env.GOOGLE_SCRIPT_SECRET!;
+  const qs = new URLSearchParams({ secret, ...params }).toString();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+  const res = await fetch(`${url}?${qs}`, { cache: "no-store", signal: controller.signal }).finally(() => clearTimeout(timeout));
+  if (!res.ok) throw new Error(`Script GET failed: ${res.status}`);
+  const data = await res.json() as T;
+  if (data && typeof data === "object" && "error" in (data as object)) throw new Error(`Script error: ${(data as { error: string }).error}`);
+  return data;
+}
+
+async function scriptPost<T>(body: Record<string, unknown>): Promise<T> {
+  const url = process.env.GOOGLE_SCRIPT_URL!;
+  const secret = process.env.GOOGLE_SCRIPT_SECRET!;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret, ...body }),
+    cache: "no-store",
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
+  if (!res.ok) throw new Error(`Script POST failed: ${res.status}`);
+  const data = await res.json() as T;
+  if (data && typeof data === "object" && "error" in (data as object)) throw new Error(`Script error: ${(data as { error: string }).error}`);
+  return data;
 }
 
 async function sheetsRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -147,6 +217,8 @@ function mockList<T extends SheetName>(sheet: T): SheetMap[T][] {
     user_progress: db.userProgress,
     audit_logs: db.auditLogs,
     preview_tokens: db.previewTokens,
+    user_pins: db.userPins,
+    register: [],
   };
   return map[sheet] as SheetMap[T][];
 }
@@ -166,19 +238,57 @@ function mockUpsert<T extends SheetName>(sheet: T, item: SheetMap[T]) {
     user_progress: db.userProgress,
     audit_logs: db.auditLogs,
     preview_tokens: db.previewTokens,
+    user_pins: db.userPins,
+    register: [],
   };
   const rows = map[sheet] as unknown[];
-  const idKey = sheet === "preview_tokens" ? "token" : "id";
+  const idKey = sheet === "preview_tokens" ? "token" : (sheet === "user_pins" || sheet === "register") ? "phone" : "id";
   const index = rows.findIndex((row) => String((row as Record<string, unknown>)[idKey]) === String((item as Record<string, unknown>)[idKey]));
   if (index >= 0) rows[index] = item;
   else rows.unshift(item);
   return item;
 }
 
+function normalizeScriptRows<T extends SheetName>(sheet: T, rows: Record<string, unknown>[]): SheetMap[T][] {
+  return rows.map((row) => normalizeSheetItem(
+    sheetHeaders[sheet].reduce((acc, key) => {
+      const raw = row[key];
+      acc[key] = parseValue(raw === undefined || raw === null ? "" : String(raw), key);
+      return acc;
+    }, {} as Record<string, unknown>),
+  ) as SheetMap[T]);
+}
+
+async function listBoUsers(): Promise<SheetMap["users"][]> {
+  const rows = await gvizGet(process.env.BO_SHEETS_ID!, process.env.BO_SHEETS_GID ?? "0");
+  return rows.map((row) => normalizeSheetItem(mapBoRowToUser(row)) as SheetMap["users"]);
+}
+
+// Reads from Apps Script users sheet directly (bypasses BO gviz override)
+export async function listScriptUsers(): Promise<SheetMap["users"][]> {
+  if (hasScriptConfig()) {
+    const rows = await scriptGet<Record<string, unknown>[]>({ sheet: "users" });
+    return normalizeScriptRows("users", rows);
+  }
+  if (!hasSheetsConfig()) return db.userPins.map((p) => ({ id: p.phone, name: "", phone: p.phone, membership: "general" as const, loginPin: p.loginPin }));
+  return [];
+}
+
 export async function listSheet<T extends SheetName>(sheet: T): Promise<SheetMap[T][]> {
-  if (!hasSheetsConfig()) return mockList(sheet);
   const cached = readCache.get(sheet);
   if (cached && cached.expiresAt > Date.now()) return cached.rows as SheetMap[T][];
+  if (sheet === "users" && hasBoConfig()) {
+    const objects = await listBoUsers();
+    readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+    return objects as SheetMap[T][];
+  }
+  if (hasScriptConfig()) {
+    const rows = await scriptGet<Record<string, unknown>[]>({ sheet });
+    const objects = normalizeScriptRows(sheet, rows);
+    readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+    return objects;
+  }
+  if (!hasSheetsConfig()) return mockList(sheet);
   const response = await sheetsRequest<{ values?: string[][] }>(valuesPath(`${sheet}!A2:Z`));
   const rows = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], response.values);
   readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
@@ -186,6 +296,25 @@ export async function listSheet<T extends SheetName>(sheet: T): Promise<SheetMap
 }
 
 export async function batchListSheets<T extends SheetName>(sheets: T[]): Promise<Record<T, SheetMap[T][]>> {
+  if (hasScriptConfig() || hasBoConfig()) {
+    const nonUserSheets = sheets.filter((s) => s !== "users") as T[];
+    const hasUsers = sheets.includes("users" as T);
+    const [scriptResult, boUsers] = await Promise.all([
+      nonUserSheets.length > 0 && hasScriptConfig()
+        ? scriptGet<Record<string, Record<string, unknown>[]>>({ sheets: nonUserSheets.join(",") })
+        : Promise.resolve({} as Record<string, Record<string, unknown>[]>),
+      hasUsers && hasBoConfig() ? listBoUsers() : Promise.resolve([] as SheetMap["users"][]),
+    ]);
+    return sheets.reduce((acc, sheet) => {
+      if (sheet === "users") {
+        readCache.set(sheet, { rows: boUsers, expiresAt: Date.now() + readTtl });
+        return { ...acc, [sheet]: boUsers };
+      }
+      const objects = normalizeScriptRows(sheet, scriptResult[sheet] ?? []);
+      readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+      return { ...acc, [sheet]: objects };
+    }, {} as Record<T, SheetMap[T][]>);
+  }
   if (!hasSheetsConfig()) {
     return sheets.reduce((acc, sheet) => ({ ...acc, [sheet]: mockList(sheet) }), {} as Record<T, SheetMap[T][]>);
   }
@@ -200,9 +329,14 @@ export async function batchListSheets<T extends SheetName>(sheets: T[]): Promise
 }
 
 export async function upsertSheet<T extends SheetName>(sheet: T, item: SheetMap[T]) {
+  if (hasScriptConfig()) {
+    await scriptPost({ action: "upsert", sheet, item });
+    readCache.delete(sheet);
+    return item;
+  }
   if (!hasSheetsConfig()) return mockUpsert(sheet, item);
   const rows = await listSheet(sheet);
-  const idKey = sheet === "preview_tokens" ? "token" : "id";
+  const idKey = sheet === "preview_tokens" ? "token" : (sheet === "user_pins" || sheet === "register") ? "phone" : "id";
   const index = rows.findIndex((row) => String((row as Record<string, unknown>)[idKey]) === String((item as Record<string, unknown>)[idKey]));
   const values = [objectToRow(sheetHeaders[sheet], item)];
   if (index >= 0) {
@@ -221,6 +355,11 @@ export async function upsertSheet<T extends SheetName>(sheet: T, item: SheetMap[
 }
 
 export async function deleteFromSheet<T extends SheetName>(sheet: T, id: string) {
+  if (hasScriptConfig()) {
+    await scriptPost({ action: "delete", sheet, id });
+    readCache.delete(sheet);
+    return true;
+  }
   if (!hasSheetsConfig()) {
     const map = {
       users: db.users,
@@ -236,15 +375,17 @@ export async function deleteFromSheet<T extends SheetName>(sheet: T, id: string)
       user_progress: db.userProgress,
       audit_logs: db.auditLogs,
       preview_tokens: db.previewTokens,
+      user_pins: db.userPins,
+      register: [] as import("./types").Register[],
     };
     const rows = map[sheet] as unknown[];
-    const idKey = sheet === "preview_tokens" ? "token" : "id";
+    const idKey = sheet === "preview_tokens" ? "token" : (sheet === "user_pins" || sheet === "register") ? "phone" : "id";
     const index = rows.findIndex((row) => String((row as Record<string, unknown>)[idKey]) === id);
     if (index >= 0) rows.splice(index, 1);
     return true;
   }
   const rows = await listSheet(sheet);
-  const idKey = sheet === "preview_tokens" ? "token" : "id";
+  const idKey = sheet === "preview_tokens" ? "token" : (sheet === "user_pins" || sheet === "register") ? "phone" : "id";
   const index = rows.findIndex((row) => String((row as Record<string, unknown>)[idKey]) === id);
   if (index < 0) return false;
   await sheetsRequest(valuesPath(`${sheet}!A${index + 2}:Z${index + 2}`, ":clear"), {

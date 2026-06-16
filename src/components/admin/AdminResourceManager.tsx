@@ -23,6 +23,8 @@ type Field = {
   type?: "textarea" | "select" | "password" | "checkbox" | "datetime-local" | "status";
   options?: FieldOption[];
   adminOnly?: boolean;
+  required?: boolean;
+  placeholder?: string;
 };
 
 type Item = Partial<PublishFields> & {
@@ -333,6 +335,7 @@ function renderField(
   updateItem: (key: string, value: unknown) => void,
 ) {
   const value = item?.[field.key];
+  const req = field.required ? { required: true } : {};
   if (field.key === "images") {
     const images = Array.isArray(value) ? value.map(String) : (normalizeValue(field.key, String(value ?? "")) as string[]);
     return (
@@ -347,7 +350,7 @@ function renderField(
     const tags = Array.isArray(value) ? value.map(String) : (normalizeValue(field.key, String(value ?? "")) as string[]);
     return <TagSelector name={field.key} value={tags} options={categoryOptions} onCreate={createCategories} onChange={(next) => updateItem(field.key, next)} />;
   }
-  if (field.type === "textarea") return <textarea name={field.key} defaultValue={String(value ?? "")} rows={4} />;
+  if (field.type === "textarea") return <textarea name={field.key} defaultValue={String(value ?? "")} rows={4} placeholder={field.placeholder} {...req} />;
   if (field.type === "select") {
     const opts: FieldOption[] = field.options ?? ["general", "silver", "platinum"];
     const firstVal = typeof opts[0] === "string" ? opts[0] : opts[0]?.value ?? "general";
@@ -380,7 +383,7 @@ function renderField(
       </div>
     );
   }
-  return <input name={field.key} type={field.type ?? "text"} defaultValue={Array.isArray(value) ? value.join(", ") : String(value ?? "")} placeholder={field.label} />;
+  return <input name={field.key} type={field.type ?? "text"} defaultValue={Array.isArray(value) ? value.join(", ") : String(value ?? "")} placeholder={field.placeholder ?? field.label} {...req} />;
 }
 
 function ResourceSummary({ item, resource }: { item: Item; resource: string }) {
