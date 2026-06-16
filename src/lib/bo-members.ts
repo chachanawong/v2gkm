@@ -19,10 +19,10 @@ function normalizePhone(v: string) {
   return String(v ?? "").replace(/\D/g, "").replace(/^0+/, "");
 }
 
-function normalizePin(pin: string): string {
+export function normalizeMembershipFromBoPin(pin: string): string {
   const v = String(pin ?? "").toLowerCase().trim();
-  if (v === "silverup" || v === "silver") return "silver";
-  if (v === "platifnumup" || v === "platinumup" || v === "platinum") return "platinum";
+  if (v === "silverup" || v === "silver_up" || v === "silver") return "silver";
+  if (v === "platifnumup" || v === "platinumup" || v === "platinum_up" || v === "platinum") return "platinum";
   return "general";
 }
 
@@ -52,7 +52,7 @@ async function fetchBoRows(): Promise<BoRow[]> {
       id: String(r.id ?? ""),
       phone: String(r.phone ?? ""),
       name: String(r.name ?? ""),
-      membership: normalizePin(String(r.pin ?? "")),
+      membership: normalizeMembershipFromBoPin(String(r.pin ?? "")),
       active: String(r.status ?? "").toLowerCase() === "active",
       loginPin: String(r.loginpin ?? "").trim(),
     }));

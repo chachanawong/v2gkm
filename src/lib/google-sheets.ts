@@ -1,4 +1,5 @@
 import { getGoogleAccessToken, hasGoogleServiceAccountConfig } from "./google-auth";
+import { normalizeMembershipFromBoPin } from "./bo-members";
 import { db } from "./mock-data";
 import { normalizeCategories, normalizeImages } from "./normalize";
 import { applyPublishWindow } from "./publish";
@@ -91,7 +92,7 @@ function mapBoRowToUser(row: Record<string, unknown>): Record<string, unknown> {
     id: row.id,
     name: row.name,
     phone: row.phone,
-    membership: row.pin || "general",
+    membership: normalizeMembershipFromBoPin(String(row.pin ?? "")),
     uplinePlatinum: row.upline,
     active: row.status === "active",
   };
