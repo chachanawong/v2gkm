@@ -25,6 +25,10 @@ export default function LoginPage() {
       setError(data.error ?? "Login failed");
       return;
     }
+    if (!data.user || !data.token) {
+      setError("ข้อมูล session ไม่ครบ กรุณาลองเข้าสู่ระบบใหม่");
+      return;
+    }
     localStorage.setItem("v2g_user", JSON.stringify(data.user));
     localStorage.setItem("v2g_user_token", data.token);
     window.dispatchEvent(new Event("v2g-session"));

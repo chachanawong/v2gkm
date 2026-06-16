@@ -52,8 +52,12 @@ export default function LoginPage() {
     const data = await res.json() as { user?: object; token?: string; error?: string };
     setLoading(false);
     if (!res.ok) { setError(data.error ?? "Login PIN ไม่ถูกต้อง"); return; }
+    if (!data.user || !data.token) {
+      setError("ข้อมูล session ไม่ครบ กรุณาลองเข้าสู่ระบบใหม่");
+      return;
+    }
     localStorage.setItem("v2g_user", JSON.stringify(data.user));
-    localStorage.setItem("v2g_user_token", data.token ?? "");
+    localStorage.setItem("v2g_user_token", data.token);
     window.dispatchEvent(new Event("v2g-session"));
     location.href = "/home";
   }
@@ -72,8 +76,12 @@ export default function LoginPage() {
     const data = await res.json() as { user?: object; token?: string; error?: string };
     setLoading(false);
     if (!res.ok) { setError(data.error ?? "เกิดข้อผิดพลาด"); return; }
+    if (!data.user || !data.token) {
+      setError("ข้อมูล session ไม่ครบ กรุณาลองเข้าสู่ระบบใหม่");
+      return;
+    }
     localStorage.setItem("v2g_user", JSON.stringify(data.user));
-    localStorage.setItem("v2g_user_token", data.token ?? "");
+    localStorage.setItem("v2g_user_token", data.token);
     window.dispatchEvent(new Event("v2g-session"));
     location.href = "/home";
   }

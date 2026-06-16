@@ -8,12 +8,22 @@ let lastUser: User | null = null;
 let lastAdminRaw: string | null = null;
 let lastAdmin: Omit<Admin, "password"> | null = null;
 
+function parseStoredJson<T>(key: string, raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    window.localStorage.removeItem(key);
+    return null;
+  }
+}
+
 export function getStoredUser(): User | null {
   if (typeof window === "undefined") return null;
   const raw = window.localStorage.getItem("v2g_user");
   if (raw === lastUserRaw) return lastUser;
   lastUserRaw = raw;
-  lastUser = raw ? (JSON.parse(raw) as User) : null;
+  lastUser = parseStoredJson<User>("v2g_user", raw);
   return lastUser;
 }
 
@@ -22,7 +32,7 @@ export function getStoredAdmin(): Omit<Admin, "password"> | null {
   const raw = window.localStorage.getItem("v2g_admin");
   if (raw === lastAdminRaw) return lastAdmin;
   lastAdminRaw = raw;
-  lastAdmin = raw ? (JSON.parse(raw) as Omit<Admin, "password">) : null;
+  lastAdmin = parseStoredJson<Omit<Admin, "password">>("v2g_admin", raw);
   return lastAdmin;
 }
 

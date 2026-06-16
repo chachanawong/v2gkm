@@ -28,6 +28,10 @@ export default function AdminLoginPage() {
       setError(data.error ?? "Login failed");
       return;
     }
+    if (!data.admin || !data.token) {
+      setError("Session response ไม่สมบูรณ์ กรุณาลองใหม่");
+      return;
+    }
     localStorage.setItem("v2g_admin", JSON.stringify(data.admin));
     localStorage.setItem("v2g_admin_token", data.token);
     window.dispatchEvent(new Event("v2g-session"));
