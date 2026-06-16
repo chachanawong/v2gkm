@@ -1,7 +1,7 @@
 import { loginUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
-import { lookupBoMemberPin } from "@/lib/bo-members";
-import { listSheet, upsertSheet } from "@/lib/google-sheets";
+import { clearBoCache, lookupBoMemberPin } from "@/lib/bo-members";
+import { upsertSheet } from "@/lib/google-sheets";
 import { createUserToken } from "@/lib/session-token";
 
 export const dynamic = "force-dynamic";
@@ -11,48 +11,9 @@ function normalizePhone(v: string) {
   return String(v ?? "").replace(/\D/g, "").replace(/^0+/, "");
 }
 
-// Store PINs in audit_logs with resource="login_pin" (no new sheet needed)
-async function findLogPin(phone: string): Promise<string | null> {
-  try {
-    const norm = normalizePhone(phone);
-    const logs = await listSheet("audit_logs");
-    const entry = logs.find((l) => l.resource === "login_pin" && String(l.actor) === norm);
-    return entry ? String(entry.action) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function findSheetPin(phone: string): Promise<string | null> {
-  try {
-    const norm = normalizePhone(phone);
-    const [userPins, registerPins] = await Promise.all([
-      listSheet("user_pins"),
-      listSheet("register"),
-    ]);
-    const fromUserPins = userPins.find((row) => normalizePhone(String(row.phone ?? "")) === norm);
-    if (fromUserPins?.loginPin) return String(fromUserPins.loginPin);
-    const fromRegister = registerPins.find((row) => normalizePhone(String(row.phone ?? "")) === norm);
-    if (fromRegister?.loginpin) return String(fromRegister.loginpin);
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function saveLogPin(phone: string, pin: string, userName: string, userId: string) {
+async function savePin(phone: string, pin: string, userName: string, userId: string) {
   const norm = normalizePhone(phone);
   await Promise.all([
-    upsertSheet("audit_logs", {
-      id: `pin:${norm}`,
-      actor: norm,
-      role: "user",
-      action: pin,
-      resource: "login_pin",
-      at: new Date().toISOString(),
-    }).catch((e) =>
-      console.error("[save_login_pin_audit] audit_logs sheet error:", e),
-    ),
     upsertSheet("user_pins", { phone: norm, loginPin: pin }).catch((e) =>
       console.error("[save_user_pins_pin] user_pins sheet error:", e),
     ),
@@ -60,17 +21,12 @@ async function saveLogPin(phone: string, pin: string, userName: string, userId: 
       console.error("[save_register_pin] register sheet error:", e),
     ),
   ]);
+  clearBoCache();
   await writeAuditLog({ actor: userName, role: "user", action: "set_pin", resource: `users:${userId}` });
 }
 
-// Find PIN: BO sheet loginpin column first, then app-managed sheets, then audit_logs
 async function findPin(phone: string): Promise<string | null> {
-  const [boPin, sheetPin, logPin] = await Promise.all([
-    lookupBoMemberPin(phone),
-    findSheetPin(phone),
-    findLogPin(phone),
-  ]);
-  return boPin || sheetPin || logPin || null;
+  return lookupBoMemberPin(phone);
 }
 
 export async function POST(request: Request) {
@@ -109,7 +65,7 @@ export async function POST(request: Request) {
     if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
     const existingPin = await findPin(String(phone));
     if (existingPin) return Response.json({ error: "มี PIN อยู่แล้ว กรุณาใช้ PIN เดิม" }, { status: 409 });
-    await saveLogPin(String(phone), newPin, user.name, user.id);
+    await savePin(String(phone), newPin, user.name, user.id);
     return Response.json({ user, token: createUserToken({ id: user.id, membership: user.membership }) });
   }
 
