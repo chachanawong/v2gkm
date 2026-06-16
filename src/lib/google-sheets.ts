@@ -106,7 +106,7 @@ async function scriptGet<T>(params: Record<string, string>): Promise<T> {
   const res = await fetch(`${url}?${qs}`, { cache: "no-store", signal: controller.signal }).finally(() => clearTimeout(timeout));
   if (!res.ok) throw new Error(`Script GET failed: ${res.status}`);
   const data = await res.json() as T;
-  if (data && typeof data === "object" && "error" in (data as object)) throw new Error(`Script error: ${(data as { error: string }).error}`);
+  if (data && typeof data === "object" && "error" in (data as object)) throw new Error(`Script error: ${(data as unknown as { error: string }).error}`);
   return data;
 }
 
@@ -124,7 +124,7 @@ async function scriptPost<T>(body: Record<string, unknown>): Promise<T> {
   }).finally(() => clearTimeout(timeout));
   if (!res.ok) throw new Error(`Script POST failed: ${res.status}`);
   const data = await res.json() as T;
-  if (data && typeof data === "object" && "error" in (data as object)) throw new Error(`Script error: ${(data as { error: string }).error}`);
+  if (data && typeof data === "object" && "error" in (data as object)) throw new Error(`Script error: ${(data as unknown as { error: string }).error}`);
   return data;
 }
 

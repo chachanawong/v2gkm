@@ -33,7 +33,7 @@ async function fetchGviz(): Promise<Record<string, unknown>[]> {
   const res = await fetch(url, { cache: "no-store", signal: ctrl.signal }).finally(() => clearTimeout(timer));
   if (!res.ok) throw new Error(`gviz fetch failed: ${res.status}`);
   const text = await res.text();
-  const match = text.match(/google\.visualization\.Query\.setResponse\((.+)\);?\s*$/s);
+  const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\);?\s*$/);
   if (!match) throw new Error("gviz parse error");
   const data = JSON.parse(match[1]) as {
     table: { cols: { label: string }[]; rows: { c: ({ v: unknown } | null)[] }[] };
