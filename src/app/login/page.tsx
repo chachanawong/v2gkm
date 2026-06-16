@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/Button";
 
 type Step = "phone" | "enter-pin" | "set-pin";
 
+async function readJsonSafe<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  if (!text.trim()) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 export default function LoginPage() {
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
@@ -30,14 +40,14 @@ export default function LoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone }),
     });
-    const data = await res.json() as { status?: string; error?: string };
+    const data = await readJsonSafe<{ status?: string; error?: string }>(res);
     setLoading(false);
-    if (!res.ok || data.status === "not_found") {
-      setError("ไม่พบเบอร์นี้ในระบบ กรุณาติดต่อผู้ดูแล");
+    if (!res.ok || data?.status === "not_found") {
+      setError(data?.error ?? "ไม่พบเบอร์นี้ในระบบ กรุณาติดต่อผู้ดูแล");
       return;
     }
     reset();
-    setStep(data.status === "has_pin" ? "enter-pin" : "set-pin");
+    setStep(data?.status === "has_pin" ? "enter-pin" : "set-pin");
   }
 
   async function handleEnterPin(e: React.FormEvent) {
@@ -49,10 +59,10 @@ export default function LoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, loginPin: pin }),
     });
-    const data = await res.json() as { user?: object; token?: string; error?: string };
+    const data = await readJsonSafe<{ user?: object; token?: string; error?: string }>(res);
     setLoading(false);
-    if (!res.ok) { setError(data.error ?? "Login PIN ไม่ถูกต้อง"); return; }
-    if (!data.user || !data.token) {
+    if (!res.ok) { setError(data?.error ?? "Login PIN ไม่ถูกต้อง"); return; }
+    if (!data?.user || !data.token) {
       setError("ข้อมูล session ไม่ครบ กรุณาลองเข้าสู่ระบบใหม่");
       return;
     }
@@ -73,10 +83,10 @@ export default function LoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, newPin: pin }),
     });
-    const data = await res.json() as { user?: object; token?: string; error?: string };
+    const data = await readJsonSafe<{ user?: object; token?: string; error?: string }>(res);
     setLoading(false);
-    if (!res.ok) { setError(data.error ?? "เกิดข้อผิดพลาด"); return; }
-    if (!data.user || !data.token) {
+    if (!res.ok) { setError(data?.error ?? "เกิดข้อผิดพลาด"); return; }
+    if (!data?.user || !data.token) {
       setError("ข้อมูล session ไม่ครบ กรุณาลองเข้าสู่ระบบใหม่");
       return;
     }

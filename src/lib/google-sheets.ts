@@ -58,6 +58,10 @@ const sheetsScope = "https://www.googleapis.com/auth/spreadsheets";
 const readCache = new Map<SheetName, { rows: unknown[]; expiresAt: number }>();
 const readTtl = 15_000;
 
+function getPrimarySpreadsheetId() {
+  return process.env.GOOGLE_SHEETS_ID || process.env.BO_SHEETS_ID || "";
+}
+
 function hasScriptConfig() {
   return Boolean(process.env.GOOGLE_SCRIPT_URL && process.env.GOOGLE_SCRIPT_SECRET);
 }
@@ -94,7 +98,7 @@ function mapBoRowToUser(row: Record<string, unknown>): Record<string, unknown> {
 }
 
 function hasSheetsConfig() {
-  return Boolean(process.env.GOOGLE_SHEETS_ID && hasGoogleServiceAccountConfig());
+  return Boolean(getPrimarySpreadsheetId() && hasGoogleServiceAccountConfig());
 }
 
 async function scriptGet<T>(params: Record<string, string>): Promise<T> {
@@ -132,7 +136,8 @@ async function sheetsRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getGoogleAccessToken([sheetsScope]);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
-  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${process.env.GOOGLE_SHEETS_ID}${path}`, {
+  const spreadsheetId = getPrimarySpreadsheetId();
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}${path}`, {
     ...init,
     signal: controller.signal,
     headers: {

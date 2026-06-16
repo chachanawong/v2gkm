@@ -1,7 +1,7 @@
 import type { User } from "./types";
 
 const BO_SHEET_ID = process.env.BO_SHEETS_ID ?? "1OPmj4G0DdUzHnt-ORBN6ZQRegBfhEhERqUhud7u1SZk";
-const BO_SHEET_GID = process.env.BO_SHEETS_GID ?? "1674022559";
+const BO_SHEET_GID = process.env.BO_SHEETS_GID ?? "808115041";
 const CACHE_TTL = 30_000;
 
 type BoRow = {

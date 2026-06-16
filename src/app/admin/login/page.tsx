@@ -6,6 +6,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 
+async function readJsonSafe<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  if (!text.trim()) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,13 +32,13 @@ export default function AdminLoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    const data = await response.json();
+    const data = await readJsonSafe<{ admin?: object; token?: string; error?: string }>(response);
     setLoading(false);
     if (!response.ok) {
-      setError(data.error ?? "Login failed");
+      setError(data?.error ?? "Login failed");
       return;
     }
-    if (!data.admin || !data.token) {
+    if (!data?.admin || !data.token) {
       setError("Session response ไม่สมบูรณ์ กรุณาลองใหม่");
       return;
     }
