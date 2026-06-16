@@ -283,6 +283,12 @@ export async function listScriptUsers(): Promise<SheetMap["users"][]> {
 export async function listSheet<T extends SheetName>(sheet: T): Promise<SheetMap[T][]> {
   const cached = readCache.get(sheet);
   if (cached && cached.expiresAt > Date.now()) return cached.rows as SheetMap[T][];
+  if (hasSheetsConfig()) {
+    const response = await sheetsRequest<{ values?: string[][] }>(valuesPath(`${sheet}!A2:Z`));
+    const rows = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], response.values);
+    readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
+    return rows;
+  }
   if (sheet === "users" && hasBoConfig()) {
     const objects = await listBoUsers();
     readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
@@ -294,14 +300,20 @@ export async function listSheet<T extends SheetName>(sheet: T): Promise<SheetMap
     readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
     return objects;
   }
-  if (!hasSheetsConfig()) return mockList(sheet);
-  const response = await sheetsRequest<{ values?: string[][] }>(valuesPath(`${sheet}!A2:Z`));
-  const rows = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], response.values);
-  readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
-  return rows;
+  return mockList(sheet);
 }
 
 export async function batchListSheets<T extends SheetName>(sheets: T[]): Promise<Record<T, SheetMap[T][]>> {
+  if (hasSheetsConfig()) {
+    const query = sheets.map((sheet) => `ranges=${encodeURIComponent(`${sheet}!A2:Z`)}`).join("&");
+    const response = await sheetsRequest<{ valueRanges?: { values?: string[][] }[] }>(`/values:batchGet?${query}`);
+    return sheets.reduce((acc, sheet, index) => {
+      const rows = response.valueRanges?.[index]?.values;
+      const objects = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], rows);
+      readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+      return { ...acc, [sheet]: objects };
+    }, {} as Record<T, SheetMap[T][]>);
+  }
   if (hasScriptConfig() || hasBoConfig()) {
     const nonUserSheets = sheets.filter((s) => s !== "users") as T[];
     const hasUsers = sheets.includes("users" as T);
@@ -321,17 +333,7 @@ export async function batchListSheets<T extends SheetName>(sheets: T[]): Promise
       return { ...acc, [sheet]: objects };
     }, {} as Record<T, SheetMap[T][]>);
   }
-  if (!hasSheetsConfig()) {
-    return sheets.reduce((acc, sheet) => ({ ...acc, [sheet]: mockList(sheet) }), {} as Record<T, SheetMap[T][]>);
-  }
-  const query = sheets.map((sheet) => `ranges=${encodeURIComponent(`${sheet}!A2:Z`)}`).join("&");
-  const response = await sheetsRequest<{ valueRanges?: { values?: string[][] }[] }>(`/values:batchGet?${query}`);
-  return sheets.reduce((acc, sheet, index) => {
-    const rows = response.valueRanges?.[index]?.values;
-    const objects = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], rows);
-    readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
-    return { ...acc, [sheet]: objects };
-  }, {} as Record<T, SheetMap[T][]>);
+  return sheets.reduce((acc, sheet) => ({ ...acc, [sheet]: mockList(sheet) }), {} as Record<T, SheetMap[T][]>);
 }
 
 export async function upsertSheet<T extends SheetName>(sheet: T, item: SheetMap[T]) {
