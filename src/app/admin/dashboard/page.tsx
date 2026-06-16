@@ -4,13 +4,7 @@ import { batchListSheets } from "@/lib/google-sheets";
 import type { AuditLog, Knowledge, News, Profile, User } from "@/lib/types";
 
 export default async function AdminDashboardPage() {
-  const data = (await batchListSheets(["users", "knowledge", "news", "profiles", "audit_logs"])) as {
-    users: User[];
-    knowledge: Knowledge[];
-    news: News[];
-    profiles: Profile[];
-    audit_logs: AuditLog[];
-  };
+  const data = await loadDashboardData();
   const distribution = data.users.reduce<Record<string, number>>(
     (acc, user) => ({ ...acc, [user.membership]: (acc[user.membership] ?? 0) + 1 }),
     {},
@@ -58,7 +52,7 @@ export default async function AdminDashboardPage() {
             {[...data.knowledge].sort((a, b) => Number(b.viewCount ?? 0) - Number(a.viewCount ?? 0)).slice(0, 5).map((item) => (
               <div className="mini-row" key={item.id}>
                 <span>{item.title}</span>
-                <Badge tone="neutral">{item.viewCount.toLocaleString()} views</Badge>
+                <Badge tone="neutral">{Number(item.viewCount ?? 0).toLocaleString()} views</Badge>
               </div>
             ))}
           </section>
@@ -76,6 +70,27 @@ export default async function AdminDashboardPage() {
       </section>
     </AdminShell>
   );
+}
+
+async function loadDashboardData(): Promise<{
+  users: User[];
+  knowledge: Knowledge[];
+  news: News[];
+  profiles: Profile[];
+  audit_logs: AuditLog[];
+}> {
+  try {
+    return (await batchListSheets(["users", "knowledge", "news", "profiles", "audit_logs"])) as {
+      users: User[];
+      knowledge: Knowledge[];
+      news: News[];
+      profiles: Profile[];
+      audit_logs: AuditLog[];
+    };
+  } catch (error) {
+    console.error("[admin-dashboard] failed to load dashboard data", error);
+    return { users: [], knowledge: [], news: [], profiles: [], audit_logs: [] };
+  }
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
@@ -108,12 +123,12 @@ function ActivityList({ logs }: { logs: AuditLog[] }) {
 }
 
 function ActivityItem({ log }: { log: AuditLog }) {
-  const [target, title] = log.resource.split(":");
+  const [target, title] = String(log.resource ?? "").split(":");
   return (
     <div className="activity-item">
       <i />
       <div>
-        <strong>Admin {log.actor} {log.action} {target}</strong>
+        <strong>Admin {log.actor} {log.action} {target || "resource"}</strong>
         {title ? <span>&quot;{title}&quot;</span> : null}
         <time>{formatDateTime(log.at)}</time>
       </div>
@@ -122,6 +137,8 @@ function ActivityItem({ log }: { log: AuditLog }) {
 }
 
 function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || "-";
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "2-digit",
@@ -129,5 +146,5 @@ function formatDateTime(value: string) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).format(new Date(value)).replace(",", "");
+  }).format(date).replace(",", "");
 }
