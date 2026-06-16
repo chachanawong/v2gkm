@@ -23,6 +23,23 @@ async function findLogPin(phone: string): Promise<string | null> {
   }
 }
 
+async function findSheetPin(phone: string): Promise<string | null> {
+  try {
+    const norm = normalizePhone(phone);
+    const [userPins, registerPins] = await Promise.all([
+      listSheet("user_pins"),
+      listSheet("register"),
+    ]);
+    const fromUserPins = userPins.find((row) => normalizePhone(String(row.phone ?? "")) === norm);
+    if (fromUserPins?.loginPin) return String(fromUserPins.loginPin);
+    const fromRegister = registerPins.find((row) => normalizePhone(String(row.phone ?? "")) === norm);
+    if (fromRegister?.loginpin) return String(fromRegister.loginpin);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function saveLogPin(phone: string, pin: string, userName: string, userId: string) {
   const norm = normalizePhone(phone);
   await Promise.all([
@@ -34,6 +51,9 @@ async function saveLogPin(phone: string, pin: string, userName: string, userId: 
       resource: "login_pin",
       at: new Date().toISOString(),
     }),
+    upsertSheet("user_pins", { phone: norm, loginPin: pin }).catch((e) =>
+      console.error("[save_user_pins_pin] user_pins sheet error:", e),
+    ),
     upsertSheet("register", { phone: norm, loginpin: pin }).catch((e) =>
       console.error("[save_register_pin] register sheet error:", e),
     ),
@@ -41,13 +61,14 @@ async function saveLogPin(phone: string, pin: string, userName: string, userId: 
   await writeAuditLog({ actor: userName, role: "user", action: "set_pin", resource: `users:${userId}` });
 }
 
-// Find PIN: BO sheet loginpin column first, then audit_logs
+// Find PIN: BO sheet loginpin column first, then app-managed sheets, then audit_logs
 async function findPin(phone: string): Promise<string | null> {
-  const [boPin, logPin] = await Promise.all([
+  const [boPin, sheetPin, logPin] = await Promise.all([
     lookupBoMemberPin(phone),
+    findSheetPin(phone),
     findLogPin(phone),
   ]);
-  return boPin || logPin || null;
+  return boPin || sheetPin || logPin || null;
 }
 
 export async function POST(request: Request) {
