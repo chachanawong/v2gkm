@@ -7,6 +7,10 @@ export async function writeAuditLog(input: Omit<AuditLog, "id" | "at">) {
     id: `log-${crypto.randomUUID()}`,
     at: new Date().toISOString(),
   };
-  await upsertSheet("audit_logs", log);
+  try {
+    await upsertSheet("audit_logs", log);
+  } catch (error) {
+    console.error("[audit] failed to persist audit log:", error);
+  }
   return log;
 }

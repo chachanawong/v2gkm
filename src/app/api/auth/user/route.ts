@@ -50,7 +50,9 @@ async function saveLogPin(phone: string, pin: string, userName: string, userId: 
       action: pin,
       resource: "login_pin",
       at: new Date().toISOString(),
-    }),
+    }).catch((e) =>
+      console.error("[save_login_pin_audit] audit_logs sheet error:", e),
+    ),
     upsertSheet("user_pins", { phone: norm, loginPin: pin }).catch((e) =>
       console.error("[save_user_pins_pin] user_pins sheet error:", e),
     ),
