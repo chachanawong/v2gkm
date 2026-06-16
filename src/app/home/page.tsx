@@ -308,10 +308,12 @@ function SelectedDetail({ selected }: { selected: SelectedItem }) {
   const item = selected.item;
   return (
     <div className="knowledge-preview">
-      <div className="card-image">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={normalizeImageUrl(item.thumbnail)} alt={item.title} onError={(e) => e.currentTarget.parentElement?.classList.add("image-placeholder")} />
-      </div>
+      <KnowledgeVideoEmbed
+        youtubeId={item.youtubeId}
+        youtubeUrl={item.youtubeUrl}
+        title={item.title}
+        onView={() => trackKnowledgeView(item.id)}
+      />
       <div className="card-meta">
         <VisibilityBadge value={item.visibility} />
         <span>{item.uploadDate}</span>
@@ -320,8 +322,48 @@ function SelectedDetail({ selected }: { selected: SelectedItem }) {
       <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
       <p className="multiline">{item.title}</p>
       <a href={item.youtubeUrl} target="_blank" rel="noreferrer" onClick={() => trackKnowledgeView(item.id)}>
-        <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>Open YouTube</Button>
+        <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>เปิด YouTube</Button>
       </a>
+    </div>
+  );
+}
+
+function extractYoutubeId(url: string): string {
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+  return m?.[1] ?? "";
+}
+
+function KnowledgeVideoEmbed({
+  youtubeId,
+  youtubeUrl,
+  title,
+  onView,
+}: {
+  youtubeId: string;
+  youtubeUrl: string;
+  title: string;
+  onView: () => void;
+}) {
+  const videoId = youtubeId || extractYoutubeId(youtubeUrl);
+
+  if (!videoId) {
+    return (
+      <div style={{ background: "var(--surface-container)", borderRadius: "var(--radius)", padding: "32px 16px", textAlign: "center", color: "var(--secondary)", fontSize: 13, marginBottom: 12 }}>
+        ไม่มีลิ้งก์วิดีโอ
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative", paddingTop: "56.25%", background: "#000", borderRadius: "var(--radius)", overflow: "hidden", marginBottom: 12 }} onClick={onView}>
+      <iframe
+        src={`https://www.youtube.com/embed/${videoId}`}
+        title={title}
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+      />
     </div>
   );
 }
