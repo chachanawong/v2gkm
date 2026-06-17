@@ -100,7 +100,7 @@ export default function LoginPage() {
     <div className="login-page">
       <header className="topbar">
         <Link className="brand" aria-label="V2G" href="/login">
-          <span className="brand-mark">V2G</span><span>KM</span>
+          <span className="brand-mark">V2G</span><span>Learning Center</span>
         </Link>
         <nav className="nav" aria-label="Login navigation">
           <Link href="/admin/login">Admin Login</Link>

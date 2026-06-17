@@ -61,15 +61,6 @@ export default function AdminLoginPage() {
       </header>
       <main className="login-screen">
         <section className="login-card stack">
-        <div className="login-image">
-          <Image
-            src="https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1200&auto=format&fit=crop"
-            alt=""
-            fill
-            sizes="(max-width: 640px) 100vw, 480px"
-            priority
-          />
-        </div>
         <h1 className="section-title">V2G Admin Login</h1>
         <label className="field"><span>Email</span><input value={email} onChange={(event) => setEmail(event.target.value)} /></label>
         <label className="field">
