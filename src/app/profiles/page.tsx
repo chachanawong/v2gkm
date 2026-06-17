@@ -42,7 +42,11 @@ export default function ProfilesPage() {
       <div className="profile-grid">
         {filtered.map((item) => (
           <button className="card-button" type="button" onClick={() => setSelected(item)} key={item.id}>
-            <ContentCard title={item.name} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} /><span>{item.position}</span></>}>
+            <ContentCard
+              title={item.name}
+              image={getPrimaryImage(item)}
+              meta={<><VisibilityBadge value={item.pin || item.visibility} /><span>{item.position}</span></>}
+            >
               <p className="line-clamp">{item.bio}</p>
               <span className="muted-link">View Profile</span>
             </ContentCard>

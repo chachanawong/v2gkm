@@ -560,6 +560,19 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
   border: 1px solid var(--outline-variant);
   border-radius: var(--radius-sm);
 }
+.toolbar-users {
+  grid-template-columns: 1fr;
+}
+.toolbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -4px 0 12px;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
 
 .news-grid, .profile-grid, .knowledge-grid, .home-grid {
   display: grid;
@@ -1212,6 +1225,48 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
   text-transform: uppercase;
 }
 .admin-list { display: grid; gap: 6px; }
+.admin-table-head {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px 6px;
+  color: var(--secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.admin-table-head-users {
+  grid-template-columns: minmax(140px, 1.2fr) minmax(120px, 1fr) minmax(92px, 0.7fr) minmax(160px, 1fr) minmax(92px, 0.7fr);
+}
+.admin-sort-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.admin-sort-button i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--outline);
+}
+.admin-sort-button.active,
+.admin-sort-button:hover {
+  color: var(--foreground);
+}
+.admin-sort-button.active i,
+.admin-sort-button:hover i {
+  color: var(--foreground);
+}
 .admin-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -1227,6 +1282,9 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
 .admin-row-users,
 .admin-row-admins {
   grid-template-columns: minmax(0, 1fr) minmax(92px, auto) auto;
+}
+.admin-row-users {
+  grid-template-columns: minmax(0, 1fr);
 }
 .admin-row > div:first-child { min-width: 0; }
 .admin-row strong, .admin-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1276,6 +1334,9 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
 .admin-row-admins .row-summary-table {
   grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.2fr) minmax(92px, 0.6fr);
 }
+.row-summary-users {
+  grid-template-columns: minmax(140px, 1.2fr) minmax(120px, 1fr) minmax(92px, 0.7fr) minmax(160px, 1fr) minmax(92px, 0.7fr);
+}
 .row-summary-table .badge {
   width: fit-content;
   max-width: 100%;
@@ -1288,6 +1349,14 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 4px;
+}
+.admin-empty {
+  padding: 20px 16px;
+  border: 1px dashed var(--outline-variant);
+  border-radius: var(--radius-sm);
+  color: var(--secondary);
+  text-align: center;
+  font-size: 13px;
 }
 .category-status {
   color: var(--secondary);
@@ -1556,6 +1625,7 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
 
 @media (min-width: 640px) {
   .toolbar { grid-template-columns: 1.4fr repeat(3, minmax(120px, 0.6fr)); }
+  .toolbar-users { grid-template-columns: 1.5fr repeat(3, minmax(140px, 0.7fr)); }
   .news-grid { grid-template-columns: repeat(3, 1fr); }
   .profile-grid { grid-template-columns: repeat(3, 1fr); }
   .knowledge-grid { grid-template-columns: repeat(3, 1fr); }
@@ -1586,6 +1656,7 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
 }
 
 @media (max-width: 900px) {
+  .admin-table-head { display: none; }
   /* stack summary full-width; badge + actions share the row below */
   .admin-row {
     grid-template-columns: 1fr auto;
