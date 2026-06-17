@@ -35,6 +35,25 @@ export default function LessonPage({ params }: { params: Promise<{ id: string; l
       .catch(() => setLoading(false));
   }, [id, lessonId]);
 
+  useEffect(() => {
+    if (!lesson) return;
+    const token = getUserToken();
+    if (!token || typeof window === "undefined") return;
+    const key = `v2g-audit-open-lesson:${lesson.id}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+    fetch("/api/learning/activity", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: "open_lesson", pathId: id, lessonId: lesson.id }),
+    }).catch(() => {
+      window.sessionStorage.removeItem(key);
+    });
+  }, [id, lesson]);
+
   function submitQuiz() {
     if (!lesson) return;
     const quiz = lesson.quiz ?? [];

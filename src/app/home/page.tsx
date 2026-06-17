@@ -9,12 +9,13 @@ import { HighlightBanner } from "@/components/shared/HighlightBanner";
 import { ImageCarousel } from "@/components/shared/ImageCarousel";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { useStoredMembership } from "@/lib/client-session";
+import { getUserToken, useStoredMembership, useStoredUser } from "@/lib/client-session";
+import { maskPhone } from "@/lib/format";
 import { getPrimaryImage, normalizeCategories, normalizeImageUrl, normalizeImages } from "@/lib/normalize";
 import { toThaiCategory } from "@/lib/categoryTh";
 import { useContentBundle } from "@/lib/useContent";
 import { useLocalStorageSet } from "@/lib/useLocalStorage";
-import type { Knowledge, News, Profile } from "@/lib/types";
+import type { AuditLog, Knowledge, News, Profile } from "@/lib/types";
 
 const NEW_BADGE_DAYS = 7;
 function isNew(news: News) {
@@ -39,12 +40,14 @@ const TAB_DEFS: { tab: ActiveTab; label: string; eyebrow: string }[] = [
 
 export default function HomePage() {
   const membership = useStoredMembership();
+  const user = useStoredUser();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [activeTab, setActiveTab] = useState<ActiveTab>("news");
   const [viewMode, setViewMode] = useState<"gallery" | "list">("gallery");
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const [listModal, setListModal] = useState<ListModal | null>(null);
+  const [recentLogs, setRecentLogs] = useState<AuditLog[]>([]);
   const { data, loading } = useContentBundle(membership);
   const readNews = useLocalStorageSet("v2g_read_news");
   const [initializing, setInitializing] = useState(true);
@@ -53,6 +56,26 @@ export default function HomePage() {
     initTimer.current = setTimeout(() => setInitializing(false), 400);
     return () => { if (initTimer.current) clearTimeout(initTimer.current); };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const token = getUserToken();
+    if (!token || !user) return () => { cancelled = true; };
+    fetch("/api/user/activity", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setRecentLogs(Array.isArray(d.logs) ? (d.logs as AuditLog[]) : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRecentLogs([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   const showOverlay = initializing || loading;
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -113,6 +136,42 @@ export default function HomePage() {
           <h1>V2G Academy Learning Center</h1>
         </div>
       </section>
+
+      {user ? (
+        <section className="dashboard-grid" style={{ marginBottom: 20 }}>
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <p className="eyebrow">Member</p>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>ข้อมูลสมาชิก</h2>
+              </div>
+            </div>
+            <div className="member-column-grid">
+              <InfoColumn label="Name" value={user.name || "-"} />
+              <InfoColumn label="PIN" value={user.loginPin || "-"} />
+              <InfoColumn label="Upline" value={user.uplinePlatinum || "-"} />
+              <InfoColumn label="Phone" value={maskPhone(user.phone)} />
+              <InfoColumn label="Membership" value={formatMembership(user.membership)} />
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <p className="eyebrow">Activity</p>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Recent Activity</h2>
+              </div>
+            </div>
+            {recentLogs.length ? (
+              <div className="activity-list">
+                {recentLogs.map((log) => <UserActivityItem key={log.id} log={log} />)}
+              </div>
+            ) : (
+              <p style={{ color: "var(--secondary)", fontSize: 13 }}>ยังไม่มีกิจกรรมล่าสุด</p>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {!loading && highlights.length ? <HighlightBanner slides={highlights} /> : null}
 
@@ -448,4 +507,57 @@ function groupByCategory<T extends { id: string; categories?: string[] }>(items:
   return [...map.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, rows]) => ({ name, items: rows }));
+}
+
+function InfoColumn({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="member-column">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function UserActivityItem({ log }: { log: AuditLog }) {
+  const detail = formatActivityDetail(log);
+  return (
+    <div className="activity-item">
+      <i />
+      <div>
+        <strong>{detail.title}</strong>
+        {detail.subtitle ? <span>{detail.subtitle}</span> : null}
+        <time>{formatDateTime(log.at)}</time>
+      </div>
+    </div>
+  );
+}
+
+function formatActivityDetail(log: AuditLog) {
+  const raw = String(log.resource ?? "");
+  const splitIndex = raw.indexOf(":");
+  const target = splitIndex >= 0 ? raw.slice(0, splitIndex) : raw;
+  const subtitle = splitIndex >= 0 ? raw.slice(splitIndex + 1) : "";
+
+  if (log.action === "login") return { title: "เข้าสู่ระบบ", subtitle: "บัญชีผู้ใช้" };
+  if (log.action === "set_pin") return { title: "ตั้งค่า PIN", subtitle: "อัปเดต PIN สำหรับเข้าสู่ระบบ" };
+  if (log.action === "open_path") return { title: "เปิดเส้นทางการเรียนรู้", subtitle };
+  if (log.action === "open_lesson") return { title: "เปิดลิ้งค์เรียนรู้", subtitle };
+  return { title: log.action.replaceAll("_", " "), subtitle: subtitle || target };
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || "-";
+  return new Intl.DateTimeFormat("th-TH", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatMembership(value?: string) {
+  if (!value) return "-";
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 }

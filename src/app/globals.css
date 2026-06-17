@@ -1107,6 +1107,30 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
 .metric-card strong { font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
 .dashboard-grid { display: grid; gap: 18px; }
 .panel, .list-panel { padding: 20px; }
+.member-column-grid {
+  display: grid;
+  gap: 12px;
+}
+.member-column {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, #fff 0%, #fafafa 100%);
+}
+.member-column span {
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.member-column strong {
+  font-size: 15px;
+  line-height: 1.3;
+  word-break: break-word;
+}
 .list-panel > h2 {
   font-size: 11px;
   font-weight: 700;
@@ -1538,6 +1562,7 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
   .home-grid { grid-template-columns: repeat(2, 1fr); }
   .metric-grid { grid-template-columns: repeat(4, 1fr); }
   .dashboard-grid { grid-template-columns: 1fr 1fr; }
+  .member-column-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wide { grid-column: 1 / -1; }
   .form-grid { grid-template-columns: repeat(2, 1fr); }
   .tag-selector-grid { grid-template-columns: 1fr 1fr; }

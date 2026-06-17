@@ -30,6 +30,25 @@ export default function PathDetailPage({ params }: { params: Promise<{ id: strin
       .catch(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    if (!path) return;
+    const token = getUserToken();
+    if (!token || typeof window === "undefined") return;
+    const key = `v2g-audit-open-path:${path.id}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+    fetch("/api/learning/activity", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: "open_path", pathId: path.id }),
+    }).catch(() => {
+      window.sessionStorage.removeItem(key);
+    });
+  }, [path]);
+
   const prog = pathProgress(id, lessons.length);
 
   return (

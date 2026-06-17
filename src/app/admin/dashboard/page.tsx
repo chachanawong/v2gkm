@@ -37,7 +37,7 @@ export default async function AdminDashboardPage() {
             </div>
             {Object.entries(distribution).map(([label, value]) => (
               <div className="bar-row" key={label}>
-                <span>{label}</span>
+                <span>{formatMembershipLabel(label)}</span>
                 <div><i style={{ width: `${(value / max) * 100}%` }} /></div>
                 <strong>{value}</strong>
               </div>
@@ -152,4 +152,9 @@ function formatDateTime(value: string) {
     minute: "2-digit",
     hour12: false,
   }).format(date).replace(",", "");
+}
+
+function formatMembershipLabel(value: string) {
+  if (!value) return "-";
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 }
