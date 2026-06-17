@@ -34,7 +34,7 @@ const headers = {
   user_progress: ["id", "userId", "lessonId", "pathId", "completed", "quizScore", "completedAt"],
   audit_logs: ["id", "actor", "role", "action", "resource", "at"],
   preview_tokens: ["token", "resourceType", "resourceId", "expiresAt", "data"],
-  bo_members: ["id", "createdAt", "date", "time", "name", "nickname", "upline", "phone", "memberType", "loginpin", "pin", "status"],
+  bo_members: ["id", "createdAt", "date", "time", "name", "nickname", "upline", "phone", "memberType", "loginpin", "memberpin", "status"],
 };
 
 const now = new Date().toISOString();

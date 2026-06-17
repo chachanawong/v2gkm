@@ -14,6 +14,7 @@ type BoMemberRecord = {
   phone: string;
   memberType?: string;
   loginpin?: string;
+  memberpin?: string;
   pin?: string;
   status?: string;
 };
@@ -33,7 +34,7 @@ function normalizeStatus(value: unknown) {
 }
 
 function normalizeMembershipFromRecord(record: BoMemberRecord): Membership {
-  const pin = normalizeText(record.pin).toLowerCase();
+  const pin = normalizeText(record.memberpin || record.pin).toLowerCase();
   if (pin === "silver" || pin === "silver_up" || pin === "silver up") return "silver";
   if (pin === "platinum" || pin === "platinum_up" || pin === "platinum up") return "platinum";
 

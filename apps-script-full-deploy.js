@@ -51,7 +51,7 @@ const BO_MEMBER_HEADERS = [
   "phone",
   "memberType",
   "loginpin",
-  "pin",
+  "memberpin",
   "status"
 ];
 const REGISTER_HEADERS = [
@@ -625,7 +625,7 @@ function normalizeManagedSheetItem_(sheetName, item, keyHeader) {
 
   if (sheetName === "bo_members") {
     normalized.loginpin = String(normalized.loginpin || "").trim();
-    normalized.pin = String(normalized.pin || "").trim();
+    normalized.memberpin = String(normalized.memberpin || normalized.pin || "").trim();
     normalized.name = String(normalized.name || "").trim();
     normalized.upline = String(normalized.upline || "").trim();
     normalized.memberType = normalizeMemberType_(normalized.memberType || "");
