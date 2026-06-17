@@ -33,13 +33,14 @@ function normalizeStatus(value: unknown) {
   return normalizeText(value).toLowerCase();
 }
 
+function isActiveBoMemberStatus(value: unknown) {
+  return normalizeStatus(value) === "active";
+}
+
 function normalizeMembershipFromRecord(record: BoMemberRecord): Membership {
-  const pin = normalizeText(record.memberpin || record.pin).toLowerCase();
+  const pin = normalizeText(record.memberpin).toLowerCase();
   if (pin === "silver" || pin === "silver_up" || pin === "silver up") return "silver";
   if (pin === "platinum" || pin === "platinum_up" || pin === "platinum up") return "platinum";
-
-  const memberType = normalizeText(record.memberType).toLowerCase();
-  if (memberType === "silver_up" || memberType === "silver up" || memberType === "silver") return "silver";
 
   return "general";
 }
@@ -96,7 +97,7 @@ function toUser(record: BoMemberRecord): User {
     phone: normalizeText(record.phone),
     membership: normalizeMembershipFromRecord(record),
     uplinePlatinum: normalizeText(record.upline),
-    active: normalizeStatus(record.status) !== "inactive",
+    active: isActiveBoMemberStatus(record.status),
     loginPin: normalizeText(record.loginpin),
   };
 }
@@ -115,7 +116,7 @@ export async function lookupBoMember(phone: string): Promise<User | null> {
 export async function lookupBoMemberPin(phone: string): Promise<string | null> {
   const rows = await listBoMembers();
   const normalizedPhone = normalizePhone(phone);
-  const member = rows.find((row) => normalizePhone(row.phone) === normalizedPhone && normalizeStatus(row.status) !== "inactive");
+  const member = rows.find((row) => normalizePhone(row.phone) === normalizedPhone && isActiveBoMemberStatus(row.status));
   const loginpin = normalizeText(member?.loginpin);
   return loginpin || null;
 }
