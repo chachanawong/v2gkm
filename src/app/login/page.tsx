@@ -1,6 +1,7 @@
 "use client";
 
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -99,8 +100,9 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <header className="topbar">
-        <Link className="brand" aria-label="V2G" href="/login">
-          <span className="brand-mark">V2G</span><span>Learning Center</span>
+        <Link className="brand" aria-label="V2G Learning Center" href="/login">
+          <Image src="/images/v2g-logo-circle.png" alt="V2G Learning Center" width={40} height={40} priority />
+          <span>V2G Learning Center</span>
         </Link>
         <nav className="nav" aria-label="Login navigation">
           <Link href="/admin/login">Admin Login</Link>
