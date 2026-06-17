@@ -1,6 +1,6 @@
 import { findUserPin, loginUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
-import { upsertSheet } from "@/lib/google-sheets";
+import { updateBoMemberLoginPin } from "@/lib/bo-members";
 import { createUserToken } from "@/lib/session-token";
 
 export const dynamic = "force-dynamic";
@@ -12,14 +12,7 @@ function normalizePhone(v: string) {
 
 async function savePin(phone: string, pin: string, userName: string, userId: string) {
   const norm = normalizePhone(phone);
-  await Promise.all([
-    upsertSheet("user_pins", { phone: norm, loginPin: pin }).catch((e) =>
-      console.error("[save_user_pins_pin] user_pins sheet error:", e),
-    ),
-    upsertSheet("register", { phone: norm, loginpin: pin }).catch((e) =>
-      console.error("[save_register_pin] register sheet error:", e),
-    ),
-  ]);
+  await updateBoMemberLoginPin(norm, pin);
   await writeAuditLog({ actor: userName, role: "user", action: "set_pin", resource: `users:${userId}` });
 }
 

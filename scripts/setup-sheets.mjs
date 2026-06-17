@@ -7,7 +7,6 @@ loadEnvConfig(process.cwd());
 const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
 
 const headers = {
-  users: ["id", "name", "phone", "membership", "uplinePlatinum", "active"],
   admins: ["id", "name", "email", "role", "password", "active"],
   knowledge: [
     "id",
@@ -26,19 +25,20 @@ const headers = {
     "updatedAt",
   ],
   profiles: ["id", "pin", "name", "bio", "position", "visibility", "images", "status", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories"],
-  news: ["id", "title", "body", "images", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories"],
+  news: ["id", "title", "body", "eventDate", "eventTime", "eventChannel", "images", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories", "pinned"],
   categories: ["id", "name", "active"],
+  events: ["id", "title", "description", "eventType", "startDate", "endDate", "location", "capacity", "images", "visibility", "status", "pinned", "createdAt", "updatedAt"],
+  event_registrations: ["id", "eventId", "userId", "userName", "userPhone", "status", "createdAt"],
+  learning_paths: ["id", "title", "description", "thumbnail", "visibility", "status", "order", "createdAt", "updatedAt"],
+  lessons: ["id", "pathId", "title", "description", "youtubeUrl", "youtubeId", "thumbnail", "order", "quiz", "passingScore", "status", "createdAt", "updatedAt"],
+  user_progress: ["id", "userId", "lessonId", "pathId", "completed", "quizScore", "completedAt"],
   audit_logs: ["id", "actor", "role", "action", "resource", "at"],
-  preview_tokens: ["token", "resourceType", "resourceId", "expiresAt"],
+  preview_tokens: ["token", "resourceType", "resourceId", "expiresAt", "data"],
+  bo_members: ["id", "createdAt", "date", "time", "name", "nickname", "upline", "phone", "memberType", "loginpin", "pin", "status"],
 };
 
 const now = new Date().toISOString();
 const seedRows = {
-  users: [
-    ["u-001", "Nara", "0811111111", "general", ""],
-    ["u-002", "Silver Member", "0822222222", "silver", "Ploy"],
-    ["u-003", "Platinum Member", "0833333333", "platinum", ""],
-  ],
   admins: [["a-001", "Admin V2G", "admin@v2g.local", "Admin", "admin1234", true]],
   categories: [
     ["c-001", "Business", "true"],
@@ -101,6 +101,9 @@ const seedRows = {
       "n-001",
       "V2G Weekly Update",
       "สรุปข่าวประจำสัปดาห์\nกิจกรรมใหม่เปิดให้ลงทะเบียนแล้ว\nติดตามรายละเอียดเพิ่มเติมในระบบ",
+      "",
+      "",
+      "",
       JSON.stringify(["/window.svg"]),
       "published",
       "general",
@@ -108,6 +111,8 @@ const seedRows = {
       "",
       now,
       now,
+      JSON.stringify(["Business"]),
+      false,
     ],
   ],
   profiles: [
@@ -127,7 +132,8 @@ const seedRows = {
     ],
   ],
   audit_logs: [["log-001", "system", "system", "setup sheets", "all", now]],
-  preview_tokens: [["demo-preview-token", "news", "n-001", "2030-01-01T00:00:00.000Z"]],
+  preview_tokens: [["demo-preview-token", "news", "n-001", "2030-01-01T00:00:00.000Z", ""]],
+  bo_members: [],
 };
 
 function requireEnv(name) {

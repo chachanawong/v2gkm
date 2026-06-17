@@ -23,7 +23,6 @@ Production-ready starter for a compact V2G knowledge management web app built wi
 Create `.env.local`:
 
 ```bash
-GOOGLE_SCRIPT_URL="https://script.google.com/macros/s/your-deployment-id/exec"
 GOOGLE_SCRIPT_SECRET="shared-secret-between-app-and-script"
 APP_SECRET="change-this-long-random-secret"
 YOUTUBE_API_KEY="optional-youtube-data-api-key"
@@ -32,7 +31,8 @@ GOOGLE_DRIVE_CLIENT_SECRET="oauth-client-secret"
 GOOGLE_DRIVE_REFRESH_TOKEN="oauth-refresh-token"
 ```
 
-Recommended setup is to let both local and production talk to the same Apps Script deployment. That keeps Google Sheet access centralized and avoids duplicating Spreadsheet credentials/config in Railway.
+The app is hard-wired to this Apps Script deployment: `https://script.google.com/macros/s/AKfycbzhQemA6bx5bYJGi3_LW2RYkOeIJuoqyuXHK_3TVl9rbN-WUmVeDGwxe_VF1S4OvCai/exec`
+Local and production now talk to the same Apps Script deployment by default. Keep `GOOGLE_SCRIPT_SECRET` in env so the shared secret does not live in the repo.
 If these variables are missing, the app uses mock data from `src/lib/mock-data.ts` so local development still works.
 `YOUTUBE_API_KEY` is optional, but required when you want upload date and view count to come from the real YouTube Data API instead of stored values.
 Admin uploads are hard-wired to Google Drive folder `1by5EUSXxgd39h1sN6CTXesfg77XYqMxk`. If Drive OAuth env is missing, uploads fall back to `public/uploads` for local development only.
@@ -51,7 +51,6 @@ Use the direct Sheets fallback only when Apps Script is unavailable.
 
 Create sheets with these tab names:
 
-- `users`
 - `admins`
 - `knowledge`
 - `profiles`
@@ -64,8 +63,7 @@ Create sheets with these tab names:
 - `user_progress`
 - `audit_logs`
 - `preview_tokens`
-- `user_pins`
-- `register`
+- `bo_members`
 
 The headers are defined in `src/lib/google-sheets.ts`. If you use the direct Sheets fallback, share the Sheet with the service account email as Editor.
 
@@ -128,7 +126,6 @@ vercel login
 3. Add environment variables:
 
 ```bash
-vercel env add GOOGLE_SCRIPT_URL
 vercel env add GOOGLE_SCRIPT_SECRET
 ```
 
@@ -156,7 +153,7 @@ vercel --prod
 
 - Create the Google Sheet and tabs.
 - Deploy `apps-script-full-deploy.js` to Google Apps Script and keep its `SPREADSHEET_ID` pointed at the single source-of-truth sheet.
-- Add `GOOGLE_SCRIPT_URL` and `GOOGLE_SCRIPT_SECRET` to local and production env.
+- Add `GOOGLE_SCRIPT_SECRET` to local and production env.
 - Create a Google Cloud service account only if you want the optional direct Sheets fallback.
 
 ## Notes

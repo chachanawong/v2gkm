@@ -55,6 +55,7 @@ const resourceToSheet: Record<ResourceType, SheetName> = {
 };
 
 const sheetsScope = "https://www.googleapis.com/auth/spreadsheets";
+const appScriptUrl = "https://script.google.com/macros/s/AKfycbzhQemA6bx5bYJGi3_LW2RYkOeIJuoqyuXHK_3TVl9rbN-WUmVeDGwxe_VF1S4OvCai/exec";
 const readCache = new Map<SheetName, { rows: unknown[]; expiresAt: number }>();
 const readTtl = 15_000;
 
@@ -63,7 +64,7 @@ function getPrimarySpreadsheetId() {
 }
 
 function hasScriptConfig() {
-  return Boolean(process.env.GOOGLE_SCRIPT_URL && process.env.GOOGLE_SCRIPT_SECRET);
+  return Boolean(appScriptUrl && process.env.GOOGLE_SCRIPT_SECRET);
 }
 
 function hasSheetsConfig() {
@@ -71,7 +72,7 @@ function hasSheetsConfig() {
 }
 
 async function scriptGet<T>(params: Record<string, string>): Promise<T> {
-  const url = process.env.GOOGLE_SCRIPT_URL!;
+  const url = appScriptUrl;
   const secret = process.env.GOOGLE_SCRIPT_SECRET!;
   const qs = new URLSearchParams({ secret, ...params }).toString();
   const controller = new AbortController();
@@ -84,7 +85,7 @@ async function scriptGet<T>(params: Record<string, string>): Promise<T> {
 }
 
 async function scriptPost<T>(body: Record<string, unknown>): Promise<T> {
-  const url = process.env.GOOGLE_SCRIPT_URL!;
+  const url = appScriptUrl;
   const secret = process.env.GOOGLE_SCRIPT_SECRET!;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);

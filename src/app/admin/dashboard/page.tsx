@@ -1,6 +1,7 @@
 import { AdminShell } from "@/components/shared/AdminShell";
 import { Badge } from "@/components/ui/Badge";
 import { batchListSheets } from "@/lib/google-sheets";
+import { listBoUsers } from "@/lib/bo-members";
 import type { AuditLog, Knowledge, News, Profile, User } from "@/lib/types";
 
 export default async function AdminDashboardPage() {
@@ -80,12 +81,16 @@ async function loadDashboardData(): Promise<{
   audit_logs: AuditLog[];
 }> {
   try {
-    return (await batchListSheets(["users", "knowledge", "news", "profiles", "audit_logs"])) as {
-      users: User[];
-      knowledge: Knowledge[];
-      news: News[];
-      profiles: Profile[];
-      audit_logs: AuditLog[];
+    const [content, users] = await Promise.all([
+      batchListSheets(["knowledge", "news", "profiles", "audit_logs"]),
+      listBoUsers(),
+    ]);
+    return {
+      users: users.filter((user) => user.active !== false),
+      knowledge: content.knowledge as Knowledge[],
+      news: content.news as News[],
+      profiles: content.profiles as Profile[],
+      audit_logs: content.audit_logs as AuditLog[],
     };
   } catch (error) {
     console.error("[admin-dashboard] failed to load dashboard data", error);

@@ -51,6 +51,7 @@ const BO_MEMBER_HEADERS = [
   "phone",
   "memberType",
   "loginpin",
+  "pin",
   "status"
 ];
 const REGISTER_HEADERS = [
@@ -62,6 +63,10 @@ const USER_PINS_HEADERS = [
   "loginPin"
 ];
 const APP_SHEET_DEFS = {
+  bo_members: {
+    headers: BO_MEMBER_HEADERS,
+    key: "phone"
+  },
   users: {
     headers: ["id", "name", "phone", "membership", "uplinePlatinum", "active", "loginPin"],
     key: "id"
@@ -616,6 +621,15 @@ function normalizeManagedSheetItem_(sheetName, item, keyHeader) {
 
   if (keyHeader === "phone") {
     normalized.phone = normalizePhone_(normalized.phone || "");
+  }
+
+  if (sheetName === "bo_members") {
+    normalized.loginpin = String(normalized.loginpin || "").trim();
+    normalized.pin = String(normalized.pin || "").trim();
+    normalized.name = String(normalized.name || "").trim();
+    normalized.upline = String(normalized.upline || "").trim();
+    normalized.memberType = normalizeMemberType_(normalized.memberType || "");
+    normalized.status = String(normalized.status || "active").trim().toLowerCase();
   }
 
   if (sheetName === "register") {
