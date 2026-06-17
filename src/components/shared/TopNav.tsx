@@ -34,7 +34,7 @@ export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: 
   return (
     <header className="topbar">
       <Link href={admin ? "/admin/dashboard" : "/home"} className="brand" aria-label="V2G KM">
-        <Image src="/images/v2g-logo.jpg" alt="V2G" width={40} height={40} priority />
+        <Image src="/images/v2g-logo-circle.png" alt="V2G" width={40} height={40} priority />
         {admin ? <span>ADMIN</span> : null}
       </Link>
       {!admin ? (

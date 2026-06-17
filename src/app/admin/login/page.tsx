@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
     <div className="login-page">
       <header className="topbar">
         <Link href="/admin/login" className="brand" aria-label="V2G Admin">
-          <Image src="/images/v2g-logo.jpg" alt="V2G Admin" width={40} height={40} priority />
+          <Image src="/images/v2g-logo-circle.png" alt="V2G Admin" width={40} height={40} priority />
           <span>ADMIN</span>
         </Link>
         <nav className="nav" aria-label="Admin login navigation">

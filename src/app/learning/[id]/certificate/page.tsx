@@ -63,7 +63,7 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
       }}>
         <div style={{ marginBottom: 24 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/v2g-logo.jpg" alt="V2G" style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover" }} />
+          <img src="/images/v2g-logo-circle.png" alt="V2G" style={{ width: 64, height: 64, borderRadius: 9999, objectFit: "cover" }} />
         </div>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "var(--secondary)", textTransform: "uppercase", marginBottom: 8 }}>V2G Academy Learning Center</p>
         <p style={{ fontSize: 13, color: "var(--secondary)", marginBottom: 32 }}>ใบรับรองการเรียนจบหลักสูตร</p>
