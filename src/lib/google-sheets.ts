@@ -1,5 +1,4 @@
 import { getGoogleAccessToken, hasGoogleServiceAccountConfig } from "./google-auth";
-import { normalizeMembershipFromBoPin } from "./bo-members";
 import { db } from "./mock-data";
 import { normalizeCategories, normalizeImages } from "./normalize";
 import { applyPublishWindow } from "./publish";
@@ -60,42 +59,11 @@ const readCache = new Map<SheetName, { rows: unknown[]; expiresAt: number }>();
 const readTtl = 15_000;
 
 function getPrimarySpreadsheetId() {
-  return process.env.GOOGLE_SHEETS_ID || process.env.BO_SHEETS_ID || "";
+  return process.env.GOOGLE_SHEETS_ID || "";
 }
 
 function hasScriptConfig() {
   return Boolean(process.env.GOOGLE_SCRIPT_URL && process.env.GOOGLE_SCRIPT_SECRET);
-}
-
-function hasBoConfig() {
-  return Boolean(process.env.BO_SHEETS_ID);
-}
-
-async function gvizGet(sheetId: string, gid: string): Promise<Record<string, unknown>[]> {
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
-  const res = await fetch(url, { cache: "no-store", signal: controller.signal }).finally(() => clearTimeout(timeout));
-  if (!res.ok) throw new Error(`gviz fetch failed: ${res.status}`);
-  const text = await res.text();
-  const match = text.match(/google\.visualization\.Query\.setResponse\((.+)\);?\s*$/s);
-  if (!match) throw new Error("gviz parse error");
-  const data = JSON.parse(match[1]) as { table: { cols: { label: string }[]; rows: { c: ({ v: unknown } | null)[] }[] } };
-  const cols = data.table.cols.map((c) => c.label);
-  return data.table.rows.map((row) =>
-    cols.reduce((acc, col, i) => ({ ...acc, [col]: row.c[i]?.v ?? "" }), {} as Record<string, unknown>),
-  );
-}
-
-function mapBoRowToUser(row: Record<string, unknown>): Record<string, unknown> {
-  return {
-    id: row.id,
-    name: row.name,
-    phone: row.phone,
-    membership: normalizeMembershipFromBoPin(String(row.pin ?? "")),
-    uplinePlatinum: row.upline,
-    active: row.status === "active",
-  };
 }
 
 function hasSheetsConfig() {
@@ -265,70 +233,42 @@ function normalizeScriptRows<T extends SheetName>(sheet: T, rows: Record<string,
   ) as SheetMap[T]);
 }
 
-async function listBoUsers(): Promise<SheetMap["users"][]> {
-  const rows = await gvizGet(process.env.BO_SHEETS_ID!, process.env.BO_SHEETS_GID ?? "0");
-  return rows.map((row) => normalizeSheetItem(mapBoRowToUser(row)) as SheetMap["users"]);
-}
-
-// Reads from Apps Script users sheet directly (bypasses BO gviz override)
-export async function listScriptUsers(): Promise<SheetMap["users"][]> {
-  if (hasScriptConfig()) {
-    const rows = await scriptGet<Record<string, unknown>[]>({ sheet: "users" });
-    return normalizeScriptRows("users", rows);
-  }
-  if (!hasSheetsConfig()) return db.userPins.map((p) => ({ id: p.phone, name: "", phone: p.phone, membership: "general" as const, loginPin: p.loginPin }));
-  return [];
-}
-
 export async function listSheet<T extends SheetName>(sheet: T): Promise<SheetMap[T][]> {
   const cached = readCache.get(sheet);
   if (cached && cached.expiresAt > Date.now()) return cached.rows as SheetMap[T][];
-  if (hasSheetsConfig()) {
-    const response = await sheetsRequest<{ values?: string[][] }>(valuesPath(`${sheet}!A2:Z`));
-    const rows = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], response.values);
-    readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
-    return rows;
-  }
-  if (sheet === "users" && hasBoConfig()) {
-    const objects = await listBoUsers();
-    readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
-    return objects as SheetMap[T][];
-  }
   if (hasScriptConfig()) {
     const rows = await scriptGet<Record<string, unknown>[]>({ sheet });
     const objects = normalizeScriptRows(sheet, rows);
     readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
     return objects;
   }
+  if (hasSheetsConfig()) {
+    const response = await sheetsRequest<{ values?: string[][] }>(valuesPath(`${sheet}!A2:Z`));
+    const rows = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], response.values);
+    readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
+    return rows;
+  }
   return mockList(sheet);
 }
 
 export async function batchListSheets<T extends SheetName>(sheets: T[]): Promise<Record<T, SheetMap[T][]>> {
+  if (hasScriptConfig()) {
+    const querySheets = sheets.filter((sheet, index) => sheets.indexOf(sheet) === index);
+    const scriptResult = querySheets.length > 0
+      ? await scriptGet<Record<string, Record<string, unknown>[]>>({ sheets: querySheets.join(",") })
+      : ({} as Record<string, Record<string, unknown>[]>);
+    return sheets.reduce((acc, sheet) => {
+      const objects = normalizeScriptRows(sheet, scriptResult[sheet] ?? []);
+      readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+      return { ...acc, [sheet]: objects };
+    }, {} as Record<T, SheetMap[T][]>);
+  }
   if (hasSheetsConfig()) {
     const query = sheets.map((sheet) => `ranges=${encodeURIComponent(`${sheet}!A2:Z`)}`).join("&");
     const response = await sheetsRequest<{ valueRanges?: { values?: string[][] }[] }>(`/values:batchGet?${query}`);
     return sheets.reduce((acc, sheet, index) => {
       const rows = response.valueRanges?.[index]?.values;
       const objects = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], rows);
-      readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
-      return { ...acc, [sheet]: objects };
-    }, {} as Record<T, SheetMap[T][]>);
-  }
-  if (hasScriptConfig() || hasBoConfig()) {
-    const nonUserSheets = sheets.filter((s) => s !== "users") as T[];
-    const hasUsers = sheets.includes("users" as T);
-    const [scriptResult, boUsers] = await Promise.all([
-      nonUserSheets.length > 0 && hasScriptConfig()
-        ? scriptGet<Record<string, Record<string, unknown>[]>>({ sheets: nonUserSheets.join(",") })
-        : Promise.resolve({} as Record<string, Record<string, unknown>[]>),
-      hasUsers && hasBoConfig() ? listBoUsers() : Promise.resolve([] as SheetMap["users"][]),
-    ]);
-    return sheets.reduce((acc, sheet) => {
-      if (sheet === "users") {
-        readCache.set(sheet, { rows: boUsers, expiresAt: Date.now() + readTtl });
-        return { ...acc, [sheet]: boUsers };
-      }
-      const objects = normalizeScriptRows(sheet, scriptResult[sheet] ?? []);
       readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
       return { ...acc, [sheet]: objects };
     }, {} as Record<T, SheetMap[T][]>);

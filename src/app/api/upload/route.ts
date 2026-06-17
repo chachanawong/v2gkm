@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { assertAdminRequest } from "@/lib/auth";
-import { uploadImageToDrive, type UploadedImage } from "@/lib/google-drive";
+import { hasDriveConfig, uploadImageToDrive, type UploadedImage } from "@/lib/google-drive";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -54,7 +54,7 @@ async function processImage(file: File) {
   const safeBase = file.name.replace(/\.[^.]+$/, "").replace(/[^\w.-]+/g, "-") || "image";
   const name = `${safeBase}-${crypto.randomUUID()}.webp`;
 
-  if (process.env.GOOGLE_DRIVE_FOLDER_ID) {
+  if (hasDriveConfig()) {
     return uploadImageToDrive({ buffer: output, name, mimeType: "image/webp" });
   }
   return saveLocalImage(output, name);

@@ -1,6 +1,5 @@
-import { loginUser } from "@/lib/auth";
+import { findUserPin, loginUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
-import { clearBoCache, lookupBoMemberPin } from "@/lib/bo-members";
 import { upsertSheet } from "@/lib/google-sheets";
 import { createUserToken } from "@/lib/session-token";
 
@@ -21,12 +20,11 @@ async function savePin(phone: string, pin: string, userName: string, userId: str
       console.error("[save_register_pin] register sheet error:", e),
     ),
   ]);
-  clearBoCache();
   await writeAuditLog({ actor: userName, role: "user", action: "set_pin", resource: `users:${userId}` });
 }
 
 async function findPin(phone: string): Promise<string | null> {
-  return lookupBoMemberPin(phone);
+  return findUserPin(phone);
 }
 
 export async function POST(request: Request) {

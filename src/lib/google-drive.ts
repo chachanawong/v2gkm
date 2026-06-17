@@ -1,4 +1,5 @@
 const driveScope = "https://www.googleapis.com/auth/drive";
+const adminUploadDriveFolderId = "1by5EUSXxgd39h1sN6CTXesfg77XYqMxk";
 
 export type UploadedImage = {
   id?: string;
@@ -15,11 +16,15 @@ let cachedDriveToken: { token: string; expiresAt: number } | null = null;
 
 export function hasDriveConfig() {
   return Boolean(
-    process.env.GOOGLE_DRIVE_FOLDER_ID
+    adminUploadDriveFolderId
       && process.env.GOOGLE_DRIVE_CLIENT_ID
       && process.env.GOOGLE_DRIVE_CLIENT_SECRET
       && process.env.GOOGLE_DRIVE_REFRESH_TOKEN,
   );
+}
+
+export function getDriveFolderId() {
+  return adminUploadDriveFolderId;
 }
 
 export async function uploadImageToDrive({
@@ -31,8 +36,8 @@ export async function uploadImageToDrive({
   name: string;
   mimeType: string;
 }): Promise<UploadedImage> {
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-  if (!folderId) throw new Error("GOOGLE_DRIVE_FOLDER_ID is required for Drive uploads.");
+  const folderId = getDriveFolderId();
+  if (!folderId) throw new Error("Admin upload Drive folder ID is required for Drive uploads.");
 
   const token = await getDriveAccessToken();
   await assertWritableFolder(folderId, token);
@@ -115,10 +120,10 @@ async function assertWritableFolder(folderId: string, token: string) {
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (folder.mimeType !== "application/vnd.google-apps.folder") {
-    throw new Error("GOOGLE_DRIVE_FOLDER_ID must point to a Google Drive folder.");
+    throw new Error("Admin upload Drive folder ID must point to a Google Drive folder.");
   }
   if (folder.capabilities?.canAddChildren === false) {
-    throw new Error("OAuth Google account cannot add files to GOOGLE_DRIVE_FOLDER_ID. Grant access to that account or choose a folder it owns.");
+    throw new Error("OAuth Google account cannot add files to the admin upload Google Drive folder. Grant access to that account or choose a folder it owns.");
   }
 }
 

@@ -1,11 +1,28 @@
-import { lookupBoMember } from "./bo-members";
 import { listSheet } from "./google-sheets";
 import { canAccessResource } from "./permissions";
 import { getBearerToken, verifyToken } from "./session-token";
 import type { Admin, AdminRole, ResourceType, User } from "./types";
 
 export async function loginUser(phone: string): Promise<User | null> {
-  return lookupBoMember(phone);
+  const users = await listSheet("users");
+  const normalizedPhone = normalizePhone(phone);
+  const user = users.find((item) => normalizePhone(item.phone) === normalizedPhone && item.active !== false);
+  return user ?? null;
+}
+
+export async function findUserPin(phone: string): Promise<string | null> {
+  const normalizedPhone = normalizePhone(phone);
+  const [users, userPins, registerPins] = await Promise.all([
+    listSheet("users"),
+    listSheet("user_pins"),
+    listSheet("register"),
+  ]);
+  const pinFromUsers = users.find((item) => normalizePhone(item.phone) === normalizedPhone && item.active !== false)?.loginPin;
+  if (pinFromUsers) return String(pinFromUsers).trim();
+  const pinFromUserPins = userPins.find((item) => normalizePhone(item.phone) === normalizedPhone)?.loginPin;
+  if (pinFromUserPins) return String(pinFromUserPins).trim();
+  const pinFromRegister = registerPins.find((item) => normalizePhone(item.phone) === normalizedPhone)?.loginpin;
+  return pinFromRegister ? String(pinFromRegister).trim() : null;
 }
 
 export async function loginAdmin(email: string, password: string): Promise<Omit<Admin, "password"> | null> {
