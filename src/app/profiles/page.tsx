@@ -45,6 +45,8 @@ export default function ProfilesPage() {
             <ContentCard
               title={item.name}
               image={getPrimaryImage(item)}
+              imageAspect="3/4"
+              imageFit="contain"
               meta={<><VisibilityBadge value={item.pin || item.visibility} /><span>{item.position}</span></>}
             >
               <p className="line-clamp">{item.bio}</p>
@@ -55,7 +57,7 @@ export default function ProfilesPage() {
       </div>
       <Modal open={Boolean(selected)} title={selected?.name ?? "Profile"} onClose={() => setSelected(null)}>
         {selected ? (
-          <div className="knowledge-preview">
+          <div className="knowledge-preview profile-preview">
             <div className="card-meta"><VisibilityBadge value={selected.visibility} /><span>{selected.position}</span></div>
             <p className="multiline">{selected.bio}</p>
             <div className="gallery-grid">

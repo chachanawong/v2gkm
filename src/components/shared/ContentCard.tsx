@@ -14,6 +14,7 @@ export function ContentCard({
   children,
   imageTags,
   imageAspect,
+  imageFit,
 }: {
   title: string;
   image?: string;
@@ -22,6 +23,7 @@ export function ContentCard({
   children?: ReactNode;
   imageTags?: string[];
   imageAspect?: string;
+  imageFit?: "cover" | "contain";
 }) {
   const normalizedImage = normalizeImageUrl(image);
   const [imageFailed, setImageFailed] = useState(false);
@@ -30,7 +32,12 @@ export function ContentCard({
       {normalizedImage && !imageFailed ? (
         <div className="card-image" style={imageAspect ? { aspectRatio: imageAspect } : undefined}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={normalizedImage} alt={title} onError={() => setImageFailed(true)} />
+          <img
+            src={normalizedImage}
+            alt={title}
+            onError={() => setImageFailed(true)}
+            style={imageFit ? { objectFit: imageFit } : undefined}
+          />
           {imageTags?.length ? (
             <div className="card-image-tags">
               {imageTags.slice(0, 2).map((tag) => (

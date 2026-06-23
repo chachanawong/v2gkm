@@ -29,7 +29,7 @@ export default async function ProfileDetail({ params }: { params: Promise<{ id: 
             <p className="multiline">{item.bio}</p>
             <div className="gallery-grid">
               {images.map((image, index) => (
-                <div className="gallery-image" key={`${image}-${index}`}>
+                <div className="gallery-image profile-gallery-image" key={`${image}-${index}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={normalizeImageUrl(image)} alt={item.name} />
                 </div>

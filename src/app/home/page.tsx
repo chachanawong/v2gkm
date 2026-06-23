@@ -9,6 +9,7 @@ import { HighlightBanner } from "@/components/shared/HighlightBanner";
 import { ImageCarousel } from "@/components/shared/ImageCarousel";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { getCategoryOptionNames } from "@/lib/category-settings";
 import { useStoredMembership } from "@/lib/client-session";
 import { getPrimaryImage, normalizeCategories, normalizeImageUrl, normalizeImages } from "@/lib/normalize";
 import { toThaiCategory } from "@/lib/categoryTh";
@@ -40,8 +41,12 @@ const TAB_DEFS: { tab: ActiveTab; label: string; eyebrow: string }[] = [
 export default function HomePage() {
   const membership = useStoredMembership();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
   const [activeTab, setActiveTab] = useState<ActiveTab>("news");
+  const [categoriesByTab, setCategoriesByTab] = useState<Record<ActiveTab, string>>({
+    news: "all",
+    knowledge: "all",
+    profiles: "all",
+  });
   const [viewMode, setViewMode] = useState<"gallery" | "list">("gallery");
   const [selected, setSelected] = useState<SelectedItem | null>(null);
   const [listModal, setListModal] = useState<ListModal | null>(null);
@@ -56,22 +61,47 @@ export default function HomePage() {
 
   const showOverlay = initializing || loading;
   const normalizedQuery = query.trim().toLowerCase();
+  const categoryOptionsByTab = useMemo(() => ({
+    news: getCategoryOptionNames(data.categories, "news"),
+    knowledge: getCategoryOptionNames(data.categories, "knowledge"),
+    profiles: getCategoryOptionNames(data.categories, "profiles"),
+  }), [data.categories]);
+  const newsCategory = resolveSelectedCategory(categoriesByTab.news, categoryOptionsByTab.news);
+  const knowledgeCategory = resolveSelectedCategory(categoriesByTab.knowledge, categoryOptionsByTab.knowledge);
+  const profilesCategory = resolveSelectedCategory(categoriesByTab.profiles, categoryOptionsByTab.profiles);
+  const categoryOptions = categoryOptionsByTab[activeTab];
+  const activeCategory = resolveSelectedCategory(categoriesByTab[activeTab], categoryOptions);
 
   const news = useMemo(() => {
     return [...data.news]
       .filter((item) => `${item.title} ${item.body} ${normalizeCategories(item.categories).join(" ")}`.toLowerCase().includes(normalizedQuery))
-      .filter((item) => category === "all" || normalizeCategories(item.categories).includes(category))
+      .filter((item) => newsCategory === "all" || normalizeCategories(item.categories).includes(newsCategory))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }, [category, data.news, normalizedQuery]);
+  }, [data.news, newsCategory, normalizedQuery]);
+  const allNews = useMemo(() => {
+    return [...data.news]
+      .filter((item) => `${item.title} ${item.body} ${normalizeCategories(item.categories).join(" ")}`.toLowerCase().includes(normalizedQuery))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [data.news, normalizedQuery]);
 
   const knowledge = useMemo(() => {
     return [...data.knowledge]
       .filter((item) => `${item.title} ${normalizeCategories(item.categories).join(" ")}`.toLowerCase().includes(normalizedQuery))
-      .filter((item) => category === "all" || normalizeCategories(item.categories).includes(category))
+      .filter((item) => knowledgeCategory === "all" || normalizeCategories(item.categories).includes(knowledgeCategory))
       .sort((a, b) => b.uploadDate.localeCompare(a.uploadDate));
-  }, [category, data.knowledge, normalizedQuery]);
+  }, [data.knowledge, knowledgeCategory, normalizedQuery]);
+  const allKnowledge = useMemo(() => {
+    return [...data.knowledge]
+      .filter((item) => `${item.title} ${normalizeCategories(item.categories).join(" ")}`.toLowerCase().includes(normalizedQuery))
+      .sort((a, b) => b.uploadDate.localeCompare(a.uploadDate));
+  }, [data.knowledge, normalizedQuery]);
 
   const profiles = useMemo(() => {
+    return [...data.profiles]
+      .filter((item) => `${item.name} ${item.bio} ${item.position}`.toLowerCase().includes(normalizedQuery))
+      .filter((item) => profilesCategory === "all" || normalizeCategories(item.categories).includes(profilesCategory));
+  }, [data.profiles, normalizedQuery, profilesCategory]);
+  const allProfiles = useMemo(() => {
     return [...data.profiles]
       .filter((item) => `${item.name} ${item.bio} ${item.position}`.toLowerCase().includes(normalizedQuery));
   }, [data.profiles, normalizedQuery]);
@@ -90,12 +120,12 @@ export default function HomePage() {
   }, [data.news]);
 
   const unreadCount = useMemo(() => news.filter((n) => !readNews.has(n.id)).length, [news, readNews]);
-  const tabCounts = { news: news.length, knowledge: knowledge.length, profiles: profiles.length };
+  const tabCounts = { news: allNews.length, knowledge: allKnowledge.length, profiles: allProfiles.length };
   const tabImages = useMemo(() => ({
-    news:      getPrimaryImage(data.news[0]),
-    knowledge: getPrimaryImage(data.knowledge[0]),
-    profiles:  getPrimaryImage(data.profiles[0]),
-  }), [data]);
+    news:      getFirstAvailableImage(allNews),
+    knowledge: getFirstAvailableImage(allKnowledge),
+    profiles:  getFirstAvailableImage(allProfiles),
+  }), [allKnowledge, allNews, allProfiles]);
 
   return (
     <AppShell>
@@ -154,32 +184,58 @@ export default function HomePage() {
       {/* Active section heading + tools */}
       {!loading ? (
         <div className="section-content-head">
-          <h2>{TAB_DEFS.find((t) => t.tab === activeTab)?.label}</h2>
+          <h2 style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span>{TAB_DEFS.find((t) => t.tab === activeTab)?.label}</span>
+            {activeTab === "knowledge" && activeCategory !== "all" ? (
+              <span className="tag">{knowledge.length} results</span>
+            ) : null}
+          </h2>
           <div className="section-tools">
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ค้นหา" />
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="all">ทุกหมวด</option>
-              {data.categories.map((item) => (
-                <option key={item.id} value={item.name}>{item.name}</option>
-              ))}
-            </select>
+            {activeTab === "knowledge" ? null : (
+              <select value={activeCategory} onChange={(e) => setCategoryForTab(activeTab, e.target.value, setCategoriesByTab)}>
+                <option value="all">ทุกหมวด</option>
+                {categoryOptions.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            )}
             <button type="button" className={viewMode === "gallery" ? "view-btn active" : "view-btn"} onClick={() => setViewMode("gallery")} aria-label="Gallery view">
               <LayoutGrid size={15} />
             </button>
             <button type="button" className={viewMode === "list" ? "view-btn active" : "view-btn"} onClick={() => setViewMode("list")} aria-label="List view">
               <LayoutList size={15} />
             </button>
-            {activeTab === "news" && news.length > 4 ? <Button type="button" size="sm" variant="ghost" onClick={() => setListModal("news")}>ดูทั้งหมด</Button> : null}
-            {activeTab === "knowledge" && knowledge.length > 4 ? <Button type="button" size="sm" variant="ghost" onClick={() => setListModal("knowledge")}>ดูทั้งหมด</Button> : null}
-            {activeTab === "profiles" && profiles.length > 4 ? <Button type="button" size="sm" variant="ghost" onClick={() => setListModal("profiles")}>ดูทั้งหมด</Button> : null}
           </div>
+        </div>
+      ) : null}
+
+      {!loading && activeTab === "knowledge" ? (
+        <div className="mini-category-tabs" aria-label="Knowledge categories">
+          <button
+            type="button"
+            className={activeCategory === "all" ? "mini-category-tab active" : "mini-category-tab"}
+            onClick={() => setCategoryForTab(activeTab, "all", setCategoriesByTab)}
+          >
+            ทั้งหมด
+          </button>
+          {categoryOptions.map((name) => (
+            <button
+              key={name}
+              type="button"
+              className={activeCategory === name ? "mini-category-tab active" : "mini-category-tab"}
+              onClick={() => setCategoryForTab(activeTab, name, setCategoriesByTab)}
+            >
+              {name}
+            </button>
+          ))}
         </div>
       ) : null}
 
       {/* Active tab content */}
       {activeTab === "news" ? (
         <HomeSection viewMode={viewMode}>
-          {news.slice(0, 4).map((item) => {
+          {news.map((item) => {
             const event = parseNewsEvent(item);
             return (
               <button className="card-button" type="button" onClick={() => { readNews.mark(item.id); setSelected({ type: "news", item }); }} key={item.id}>
@@ -202,11 +258,9 @@ export default function HomePage() {
 
       {activeTab === "knowledge" ? (
         <HomeSection viewMode={viewMode}>
-          {knowledge.slice(0, 4).map((item) => (
+          {knowledge.map((item) => (
             <button className="card-button" type="button" onClick={() => setSelected({ type: "knowledge", item })} key={item.id}>
-              <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span></>} imageTags={normalizeCategories(item.categories).map(toThaiCategory)} imageAspect="16/9">
-                <p className="line-clamp two-line">{item.youtubeUrl}</p>
-              </ContentCard>
+              <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<span>{item.uploadDate}</span>} imageTags={normalizeCategories(item.categories).map(toThaiCategory)} imageAspect="16/9" />
             </button>
           ))}
         </HomeSection>
@@ -214,11 +268,13 @@ export default function HomePage() {
 
       {activeTab === "profiles" ? (
         <HomeSection viewMode={viewMode}>
-          {profiles.slice(0, 4).map((item) => (
+          {profiles.map((item) => (
             <button className="card-button" type="button" onClick={() => setSelected({ type: "profile", item })} key={item.id}>
               <ContentCard
                 title={item.name}
                 image={getPrimaryImage(item)}
+                imageAspect="3/4"
+                imageFit="contain"
                 meta={<><VisibilityBadge value={item.pin || item.visibility} /><span>{item.position}</span></>}
               >
                 <p className="line-clamp multiline">{item.bio}</p>
@@ -260,6 +316,8 @@ export default function HomePage() {
               <ContentCard
                 title={item.name}
                 image={getPrimaryImage(item)}
+                imageAspect="3/4"
+                imageFit="contain"
                 meta={<><VisibilityBadge value={item.pin || item.visibility} /><span>{item.position}</span></>}
               >
                 <p className="line-clamp multiline">{item.bio}</p>
@@ -307,7 +365,7 @@ function SelectedDetail({ selected }: { selected: SelectedItem }) {
   if (selected.type === "profile") {
     const item = selected.item;
     return (
-      <div className="knowledge-preview">
+      <div className="knowledge-preview profile-preview">
         <div className="card-meta"><VisibilityBadge value={item.visibility} /><span>{item.position}</span></div>
         <p className="multiline">{item.bio}</p>
         <ImageGrid images={normalizeImages(item.images)} title={item.name} />
@@ -457,4 +515,20 @@ function groupByCategory<T extends { id: string; categories?: string[] }>(items:
   return [...map.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, rows]) => ({ name, items: rows }));
+}
+
+function resolveSelectedCategory(selected: string, options: string[]) {
+  return options.includes(selected) ? selected : "all";
+}
+
+function setCategoryForTab(
+  tab: ActiveTab,
+  value: string,
+  setCategoriesByTab: React.Dispatch<React.SetStateAction<Record<ActiveTab, string>>>,
+) {
+  setCategoriesByTab((current) => ({ ...current, [tab]: value }));
+}
+
+function getFirstAvailableImage(items: Array<Knowledge | News | Profile>) {
+  return items.map((item) => getPrimaryImage(item)).find(Boolean) ?? "";
 }
