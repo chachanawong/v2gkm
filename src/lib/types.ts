@@ -2,6 +2,7 @@ export type Membership = "general" | "silver" | "platinum";
 export type PublishStatus = "draft" | "scheduled" | "published" | "unpublished";
 export type ResourceType = "knowledge" | "news" | "profiles" | "categories" | "users" | "admins" | "events" | "learning_paths" | "lessons";
 export type AdminRole = "Admin" | "Content" | "Account";
+export type CategoryType = "knowledge" | "news" | "profiles";
 
 export type User = {
   id: string;
@@ -26,6 +27,7 @@ export type Category = {
   id: string;
   name: string;
   active: boolean;
+  type?: CategoryType;
 };
 
 export type PublishFields = {
