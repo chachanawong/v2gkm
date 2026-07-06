@@ -8,7 +8,7 @@ export async function loginUser(phone: string): Promise<User | null> {
   return lookupBoMember(phone);
 }
 
-export async function findUserPin(phone: string): Promise<{ hash: string | null; legacyPin: string | null }> {
+export async function findUserPin(phone: string): Promise<{ hash: string | null }> {
   return lookupBoMemberPin(phone);
 }
 

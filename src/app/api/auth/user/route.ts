@@ -43,57 +43,57 @@ async function createResetRequest(phone: string, userName: string, userId: strin
 }
 
 export async function POST(request: Request) {
-  const body = await request.json() as { phone?: string; loginPin?: string; newPin?: string; requestReset?: boolean };
-  const { phone, loginPin, newPin, requestReset } = body;
+  try {
+    const body = await request.json() as { phone?: string; loginPin?: string; newPin?: string; requestReset?: boolean };
+    const { phone, loginPin, newPin, requestReset } = body;
 
-  if (!/^\d{9,12}$/.test(String(phone ?? "").replace(/\D/g, ""))) {
-    return Response.json({ error: "Invalid phone number" }, { status: 400 });
-  }
-
-  if (requestReset) {
-    const user = await loginUser(String(phone));
-    if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
-    await createResetRequest(String(phone), user.name, user.id);
-    return Response.json({ success: true, message: "ส่งคำขอรีเซ็ต PIN ไปยัง Admin แล้ว" });
-  }
-
-  // Step 1: phone-only check — return PIN status
-  if (!loginPin && !newPin) {
-    const user = await loginUser(String(phone));
-    if (!user) return Response.json({ status: "not_found" }, { status: 401 });
-    const existingPin = await findPin(String(phone));
-    return Response.json({ status: existingPin.hash || existingPin.legacyPin ? "has_pin" : "needs_pin" });
-  }
-
-  // Step 2a: verify existing PIN
-  if (loginPin) {
-    const user = await loginUser(String(phone));
-    if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
-    const existingPin = await findPin(String(phone));
-    if (!existingPin.hash && !existingPin.legacyPin) return Response.json({ error: "ยังไม่มี Login PIN กรุณาตั้งค่า PIN ก่อน" }, { status: 400 });
-    const valid = existingPin.hash
-      ? verifyPin(loginPin, String(phone), existingPin.hash)
-      : existingPin.legacyPin === loginPin;
-    if (!valid) return Response.json({ error: "Login PIN ไม่ถูกต้อง" }, { status: 401 });
-    if (!existingPin.hash && existingPin.legacyPin === loginPin) {
-      await updateBoMemberLoginPin(normalizePhone(String(phone)), hashPin(loginPin, String(phone)));
+    if (!/^\d{9,12}$/.test(String(phone ?? "").replace(/\D/g, ""))) {
+      return Response.json({ error: "Invalid phone number" }, { status: 400 });
     }
-    await writeAuditLog({ actor: user.name, role: "user", action: "login", resource: `users:${user.id}` });
-    return Response.json({ user, token: createUserToken({ id: user.id, membership: user.membership }) });
-  }
 
-  // Step 2b: set new PIN
-  if (newPin) {
-    if (!/^\d{4,6}$/.test(newPin)) {
-      return Response.json({ error: "PIN ต้องเป็นตัวเลข 4-6 หลัก" }, { status: 400 });
+    if (requestReset) {
+      const user = await loginUser(String(phone));
+      if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
+      await createResetRequest(String(phone), user.name, user.id);
+      return Response.json({ success: true, message: "ส่งคำขอรีเซ็ต PIN ไปยัง Admin แล้ว" });
     }
-    const user = await loginUser(String(phone));
-    if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
-    const existingPin = await findPin(String(phone));
-    if (existingPin.hash || existingPin.legacyPin) return Response.json({ error: "มี PIN อยู่แล้ว กรุณาใช้ PIN เดิม" }, { status: 409 });
-    await savePin(String(phone), newPin, user.name, user.id);
-    return Response.json({ user, token: createUserToken({ id: user.id, membership: user.membership }) });
-  }
 
-  return Response.json({ error: "Invalid request" }, { status: 400 });
+    // Step 1: phone-only check — return PIN status
+    if (!loginPin && !newPin) {
+      const user = await loginUser(String(phone));
+      if (!user) return Response.json({ status: "not_found" }, { status: 401 });
+      const existingPin = await findPin(String(phone));
+      return Response.json({ status: existingPin.hash ? "has_pin" : "needs_pin" });
+    }
+
+    // Step 2a: verify existing PIN
+    if (loginPin) {
+      const user = await loginUser(String(phone));
+      if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
+      const existingPin = await findPin(String(phone));
+      if (!existingPin.hash) return Response.json({ error: "ยังไม่มี Login PIN กรุณาตั้งค่า PIN ก่อน" }, { status: 400 });
+      const valid = verifyPin(loginPin, String(phone), existingPin.hash);
+      if (!valid) return Response.json({ error: "Login PIN ไม่ถูกต้อง" }, { status: 401 });
+      await writeAuditLog({ actor: user.name, role: "user", action: "login", resource: `users:${user.id}` });
+      return Response.json({ user, token: createUserToken({ id: user.id, membership: user.membership }) });
+    }
+
+    // Step 2b: set new PIN
+    if (newPin) {
+      if (!/^\d{4,6}$/.test(newPin)) {
+        return Response.json({ error: "PIN ต้องเป็นตัวเลข 4-6 หลัก" }, { status: 400 });
+      }
+      const user = await loginUser(String(phone));
+      if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
+      const existingPin = await findPin(String(phone));
+      if (existingPin.hash) return Response.json({ error: "มี PIN อยู่แล้ว กรุณาใช้ PIN เดิม" }, { status: 409 });
+      await savePin(String(phone), newPin, user.name, user.id);
+      return Response.json({ user, token: createUserToken({ id: user.id, membership: user.membership }) });
+    }
+
+    return Response.json({ error: "Invalid request" }, { status: 400 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "เกิดข้อผิดพลาด";
+    return Response.json({ error: message }, { status: 500 });
+  }
 }

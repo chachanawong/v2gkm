@@ -12,7 +12,6 @@ type BoMemberRecord = {
   upline?: string;
   phone: string;
   memberType?: string;
-  loginpin?: string;
   loginpin_hash?: string;
   memberpin?: string;
   pin?: string;
@@ -38,6 +37,12 @@ type BoPaymentRecord = {
 
 let cache: { rows: BoMemberRecord[]; expiresAt: number } | null = null;
 let paymentCache = new Map<string, { rows: BoPaymentRecord[]; expiresAt: number }>();
+
+const membershipRank: Record<Membership, number> = {
+  general: 1,
+  silver: 2,
+  platinum: 3,
+};
 
 function normalizePhone(value: string) {
   return String(value ?? "").replace(/\D/g, "").replace(/^0+/, "");
@@ -90,6 +95,25 @@ function normalizeMembershipFromRecord(record: BoMemberRecord): Membership {
   }
 
   return "general";
+}
+
+function sortBoMemberCandidates(a: BoMemberRecord, b: BoMemberRecord) {
+  const eligibleScore = Number(isEligibleBoMember(b)) - Number(isEligibleBoMember(a));
+  if (eligibleScore !== 0) return eligibleScore;
+
+  const membershipScore = membershipRank[normalizeMembershipFromRecord(b)] - membershipRank[normalizeMembershipFromRecord(a)];
+  if (membershipScore !== 0) return membershipScore;
+
+  const aCreatedAt = new Date(normalizeText(a.createdAt) || 0).getTime();
+  const bCreatedAt = new Date(normalizeText(b.createdAt) || 0).getTime();
+  return bCreatedAt - aCreatedAt;
+}
+
+function findPreferredBoMemberRecord(rows: BoMemberRecord[], phone: string, options?: { eligibleOnly?: boolean }) {
+  const normalizedPhone = normalizePhone(phone);
+  const candidates = rows.filter((row) => normalizePhone(row.phone) === normalizedPhone);
+  const filtered = options?.eligibleOnly ? candidates.filter(isEligibleBoMember) : candidates;
+  return [...filtered].sort(sortBoMemberCandidates)[0] ?? null;
 }
 
 async function scriptGet<T>(params: Record<string, string>): Promise<T> {
@@ -145,7 +169,7 @@ function toUser(record: BoMemberRecord): User {
     membership: normalizeMembershipFromRecord(record),
     uplinePlatinum: normalizeText(record.upline),
     active: isEligibleBoMember(record),
-    hasLoginPin: Boolean(normalizeText(record.loginpin_hash) || normalizeText(record.loginpin)),
+    hasLoginPin: Boolean(normalizeText(record.loginpin_hash)),
   };
 }
 
@@ -155,30 +179,29 @@ export async function listBoUsers(): Promise<User[]> {
 }
 
 export async function lookupBoMember(phone: string): Promise<User | null> {
-  const users = await listBoUsers();
-  const normalizedPhone = normalizePhone(phone);
-  return users.find((user) => normalizePhone(user.phone) === normalizedPhone && user.active !== false) ?? null;
+  const rows = await listBoMembers();
+  const member = findPreferredBoMemberRecord(rows, phone, { eligibleOnly: true });
+  return member ? toUser(member) : null;
 }
 
 export async function findBoUserById(id: string): Promise<User | null> {
-  const users = await listBoUsers();
-  return users.find((user) => String(user.id) === String(id) && user.active !== false) ?? null;
+  const rows = await listBoMembers();
+  const candidates = rows.filter((row) => String(normalizeText(row.id)) === String(id));
+  const member = [...candidates].sort(sortBoMemberCandidates)[0] ?? null;
+  return member && isEligibleBoMember(member) ? toUser(member) : null;
 }
 
-export async function lookupBoMemberPin(phone: string): Promise<{ hash: string | null; legacyPin: string | null }> {
+export async function lookupBoMemberPin(phone: string): Promise<{ hash: string | null }> {
   const rows = await listBoMembers();
-  const normalizedPhone = normalizePhone(phone);
-  const member = rows.find((row) => normalizePhone(row.phone) === normalizedPhone && isEligibleBoMember(row));
+  const member = findPreferredBoMemberRecord(rows, phone, { eligibleOnly: true });
   return {
     hash: normalizeText(member?.loginpin_hash) || null,
-    legacyPin: normalizeText(member?.loginpin) || null,
   };
 }
 
 export async function updateBoMemberLoginPin(phone: string, loginpinHash: string) {
   const rows = await listBoMembers();
-  const normalizedPhone = normalizePhone(phone);
-  const member = rows.find((row) => normalizePhone(row.phone) === normalizedPhone);
+  const member = findPreferredBoMemberRecord(rows, phone, { eligibleOnly: true }) ?? findPreferredBoMemberRecord(rows, phone);
   if (!member) throw new Error("ไม่พบสมาชิกใน bo_members");
 
   const normalizedHash = normalizeText(loginpinHash);
@@ -186,7 +209,6 @@ export async function updateBoMemberLoginPin(phone: string, loginpinHash: string
     const next: BoMemberRecord = {
       ...member,
       phone: normalizeText(member.phone),
-      loginpin: "",
       loginpin_hash: normalizedHash,
     };
 
@@ -222,22 +244,19 @@ export async function updateBoMemberLoginPin(phone: string, loginpinHash: string
 
   return {
     ...member,
-    loginpin: "",
     loginpin_hash: normalizedHash,
   };
 }
 
 export async function clearBoMemberLoginPin(phone: string) {
   const rows = await listBoMembers();
-  const normalizedPhone = normalizePhone(phone);
-  const member = rows.find((row) => normalizePhone(row.phone) === normalizedPhone);
+  const member = findPreferredBoMemberRecord(rows, phone, { eligibleOnly: true }) ?? findPreferredBoMemberRecord(rows, phone);
   if (!member) throw new Error("ไม่พบสมาชิกใน bo_members");
 
   const clearWithUpsert = async () => {
     const next: BoMemberRecord = {
       ...member,
       phone: normalizeText(member.phone),
-      loginpin: "",
       loginpin_hash: "",
     };
 
@@ -259,19 +278,18 @@ export async function clearBoMemberLoginPin(phone: string) {
 
   clearBoMembersCache();
   const saved = await lookupBoMemberPin(member.phone);
-  if (saved.hash || saved.legacyPin) {
+  if (saved.hash) {
     await clearWithUpsert();
     clearBoMembersCache();
   }
 
   const verified = await lookupBoMemberPin(member.phone);
-  if (verified.hash || verified.legacyPin) {
+  if (verified.hash) {
     throw new Error("ล้าง PIN ไม่สำเร็จ กรุณาตรวจ GOOGLE_SCRIPT_URL, GOOGLE_SCRIPT_SECRET และ deployment ของ Apps Script");
   }
 
   return {
     ...member,
-    loginpin: "",
     loginpin_hash: "",
   };
 }
