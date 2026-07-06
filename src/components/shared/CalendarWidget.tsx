@@ -22,12 +22,42 @@ const EVENT_TYPE_LABEL: Record<string, string> = {
   online: "ออนไลน์",
 };
 
-function isoToDateStr(iso: string) {
-  return iso.slice(0, 10);
+function getBangkokDateParts(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  if (!year || !month || !day) return null;
+  return { year, month, day };
+}
+
+function isoToBangkokDateStr(iso: string) {
+  const parts = getBangkokDateParts(iso);
+  return parts ? `${parts.year}-${parts.month}-${parts.day}` : "";
+}
+
+function isUpcomingEvent(event: Event, now = new Date()) {
+  const compareAt = event.endDate || event.startDate;
+  const at = new Date(compareAt);
+  if (Number.isNaN(at.getTime())) return false;
+  return at >= now;
 }
 
 function formatShortDate(iso: string) {
-  return new Date(iso).toLocaleDateString("th-TH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleDateString("th-TH", {
+    timeZone: "Asia/Bangkok",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | "panel" }) {
@@ -66,25 +96,30 @@ export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | 
   const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
 
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const todayStr = isoToBangkokDateStr(today.toISOString());
 
   // Group events by startDate (day string)
   const eventsByDate = new Map<string, Event[]>();
   events.forEach((ev) => {
-    const ds = isoToDateStr(ev.startDate);
+    const ds = isoToBangkokDateStr(ev.startDate);
+    if (!ds) return;
     const existing = eventsByDate.get(ds) ?? [];
     existing.push(ev);
     eventsByDate.set(ds, existing);
   });
 
   // Events in this calendar month
-  const monthStr = `${year}-${String(monthIdx + 1).padStart(2, "0")}`;
+  const monthYear = String(year);
+  const monthNumber = String(monthIdx + 1).padStart(2, "0");
   const monthEvents = events
-    .filter((ev) => isoToDateStr(ev.startDate).startsWith(monthStr))
-    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    .filter((ev) => {
+      const parts = getBangkokDateParts(ev.startDate);
+      return parts?.year === monthYear && parts.month === monthNumber;
+    })
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
   // Upcoming events count (badge on button)
-  const upcomingCount = events.filter((ev) => new Date(ev.startDate) >= today).length;
+  const upcomingCount = events.filter((ev) => isUpcomingEvent(ev, today)).length;
 
   function dayStr(d: number) {
     return `${year}-${String(monthIdx + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -172,7 +207,7 @@ export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | 
                     className="cal-event-date"
                     style={{ color: EVENT_TYPE_COLOR[ev.eventType] ?? "var(--primary)" }}
                   >
-                    {isoToDateStr(ev.startDate).slice(8)}
+                    {isoToBangkokDateStr(ev.startDate).slice(8)}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span className="cal-event-title">{ev.title}</span>

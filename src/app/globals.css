@@ -1909,6 +1909,11 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
   .home-hero-calendar {
     height: 100%;
   }
+  .home-hero-calendar {
+    position: sticky;
+    top: 84px;
+    align-self: start;
+  }
   .home-hero-highlight .highlight-slide {
     max-height: none;
   }
