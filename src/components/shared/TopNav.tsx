@@ -8,7 +8,6 @@ import { canAccessResource } from "@/lib/permissions";
 import { getUserToken } from "@/lib/client-session";
 import { useProgress } from "@/lib/useProgress";
 import type { AdminRole, LearningPath, Lesson, User } from "@/lib/types";
-import { CalendarWidget } from "./CalendarWidget";
 
 export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: User | null; role?: AdminRole }) {
   function logout() {
@@ -39,9 +38,8 @@ export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: 
       </Link>
       {!admin ? (
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: "auto" }}>
-          <CalendarWidget />
           {user ? <MembershipExpiryBadge /> : null}
-{user ? <MemberSummary user={user} /> : null}
+          {user ? <MemberSummary user={user} /> : null}
           <button className="topbar-logout" type="button" onClick={logout}>Logout</button>
         </div>
       ) : null}
