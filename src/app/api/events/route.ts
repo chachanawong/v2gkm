@@ -12,6 +12,33 @@ const THAI_MONTHS: Record<string, number> = {
   กันยายน: 9, ตุลาคม: 10, พฤศจิกายน: 11, ธันวาคม: 12,
 };
 
+function parseThaiDateText(value: string): { year: number; month: number; day: number } | null {
+  const normalized = String(value ?? "").replace(/\u00a0/g, " ").trim();
+  const match = normalized.match(/(\d{1,2})\s+([^\s]+)\s+(?:พ\.ศ\.\s*)?(\d{4})/);
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = THAI_MONTHS[match[2]];
+  const buddhistYear = Number(match[3]);
+  const year = buddhistYear > 2400 ? buddhistYear - 543 : buddhistYear;
+  if (!month || !Number.isFinite(day) || !Number.isFinite(year)) return null;
+  return { year, month, day };
+}
+
+function parseTimeRangeStart(value: string): { hour: number; minute: number } {
+  const match = String(value ?? "").match(/(\d{1,2})[.:](\d{2})/);
+  if (!match) return { hour: 0, minute: 0 };
+  return {
+    hour: Number(match[1]),
+    minute: Number(match[2]),
+  };
+}
+
+function buildBangkokIso(year: number, month: number, day: number, hour = 0, minute = 0) {
+  const utcMs = Date.UTC(year, month - 1, day, hour - 7, minute);
+  return new Date(utcMs).toISOString();
+}
+
 function parseThaiDateFromBody(body: string): string | null {
   const m = body.match(/ที่\s*(\d{1,2})\s+([ก-๿]+)\s+(\d{4})/);
   if (!m) return null;
@@ -32,9 +59,31 @@ function parseThaiDateFromBody(body: string): string | null {
 }
 
 function newsToEvent(news: News): Event | null {
-  const startDate = news.eventDate
-    ? (news.eventDate.includes("T") ? news.eventDate : `${news.eventDate}T00:00:00.000Z`)
-    : parseThaiDateFromBody(news.body);
+  const time = parseTimeRangeStart(news.eventTime ?? "");
+  let startDate: string | null = null;
+
+  if (news.eventDate) {
+    if (news.eventDate.includes("T")) {
+      startDate = news.eventDate;
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(news.eventDate)) {
+      startDate = buildBangkokIso(
+        Number(news.eventDate.slice(0, 4)),
+        Number(news.eventDate.slice(5, 7)),
+        Number(news.eventDate.slice(8, 10)),
+        time.hour,
+        time.minute,
+      );
+    } else {
+      const parsedThaiDate = parseThaiDateText(news.eventDate);
+      if (parsedThaiDate) {
+        startDate = buildBangkokIso(parsedThaiDate.year, parsedThaiDate.month, parsedThaiDate.day, time.hour, time.minute);
+      }
+    }
+  }
+
+  if (!startDate) {
+    startDate = parseThaiDateFromBody(news.body);
+  }
   if (!startDate) return null;
 
   const cats = (Array.isArray(news.categories) ? news.categories : []).map((c) => String(c).toLowerCase());
