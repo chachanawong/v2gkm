@@ -3,10 +3,13 @@ import { PinResetRequestsPanel } from "@/components/admin/PinResetRequestsPanel"
 import { Badge } from "@/components/ui/Badge";
 import { batchListSheets } from "@/lib/google-sheets";
 import { listBoUsers } from "@/lib/bo-members";
+import { listPendingPinResetRequests } from "@/lib/pin-reset-requests";
 import type { AuditLog, Knowledge, News, PinResetRequest, Profile, User } from "@/lib/types";
 
 export default async function AdminDashboardPage() {
   const data = await loadDashboardData();
+  const loggedInUsers = countLoggedInUsers(data.audit_logs);
+  const userLoginStats = buildUserLoginStats(data.audit_logs);
   const distribution = data.users.reduce<Record<string, number>>(
     (acc, user) => ({ ...acc, [user.membership]: (acc[user.membership] ?? 0) + 1 }),
     {},
@@ -18,23 +21,24 @@ export default async function AdminDashboardPage() {
       <section className="admin-section">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Analytics</p>
-            <h1>Dashboard</h1>
+            <p className="eyebrow">ANALYTICS</p>
+            <h1>DASHBOARD</h1>
           </div>
         </div>
         <div className="metric-grid">
-          <Metric label="Users" value={data.users.length} />
-          <Metric label="Knowledge" value={data.knowledge.length} />
-          <Metric label="News" value={data.news.length} />
-          <Metric label="Profiles" value={data.profiles.length} />
+          <Metric label="USERS" value={data.users.length} />
+          <Metric label="LOGGED IN USERS" value={loggedInUsers} />
+          <Metric label="KNOWLEDGE" value={data.knowledge.length} />
+          <Metric label="NEWS" value={data.news.length} />
+          <Metric label="PROFILES" value={data.profiles.length} />
         </div>
         <div className="dashboard-grid">
           <PinResetRequestsPanel requests={data.pin_reset_requests} />
           <section className="panel">
             <div className="panel-head">
               <div>
-                <p className="eyebrow">Members</p>
-                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>User distribution</h2>
+                <p className="eyebrow">MEMBERS</p>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>USER DISTRIBUTION</h2>
               </div>
             </div>
             {Object.entries(distribution).map(([label, value]) => (
@@ -48,24 +52,40 @@ export default async function AdminDashboardPage() {
           <section className="panel">
             <div className="panel-head">
               <div>
-                <p className="eyebrow">Knowledge</p>
-                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Top content</h2>
+                <p className="eyebrow">LOGINS</p>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>LOGIN BY USER</h2>
+              </div>
+            </div>
+            {userLoginStats.length ? userLoginStats.map((item) => (
+              <div className="mini-row mini-row-panel" key={item.key}>
+                <span className="mini-row-label">{item.label}</span>
+                <Badge tone="neutral">{item.count} LOGIN{item.count > 1 ? "S" : ""}</Badge>
+              </div>
+            )) : (
+              <p className="muted">ยังไม่มีข้อมูลการ LOGIN</p>
+            )}
+          </section>
+          <section className="panel wide">
+            <div className="panel-head">
+              <div>
+                <p className="eyebrow">KNOWLEDGE</p>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>TOP CONTENT</h2>
               </div>
             </div>
             {[...data.knowledge].sort((a, b) => Number(b.viewCount ?? 0) - Number(a.viewCount ?? 0)).slice(0, 5).map((item) => (
-              <div className="mini-row" key={item.id}>
-                <span>{item.title}</span>
-                <Badge tone="neutral">{Number(item.viewCount ?? 0).toLocaleString()} views</Badge>
+              <div className="mini-row mini-row-panel mini-row-knowledge" key={item.id}>
+                <span className="mini-row-label knowledge-title">{item.title}</span>
+                <Badge tone="dark">{Number(item.viewCount ?? 0).toLocaleString()} VIEWS</Badge>
               </div>
             ))}
           </section>
           <section className="panel wide">
             <div className="panel-head">
               <div>
-                <p className="eyebrow">Audit</p>
-                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Recent activities</h2>
+                <p className="eyebrow">AUDIT</p>
+                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>RECENT ACTIVITIES</h2>
               </div>
-              <Badge tone="neutral">7 days</Badge>
+              <Badge tone="neutral">7 DAYS</Badge>
             </div>
             <ActivityList logs={data.audit_logs} />
           </section>
@@ -84,9 +104,10 @@ async function loadDashboardData(): Promise<{
   pin_reset_requests: PinResetRequest[];
 }> {
   try {
-    const [content, users] = await Promise.all([
-      batchListSheets(["knowledge", "news", "profiles", "audit_logs", "pin_reset_requests"]),
+    const [content, users, pinResetRequests] = await Promise.all([
+      batchListSheets(["knowledge", "news", "profiles", "audit_logs"], { fresh: true }),
       listBoUsers(),
+      listPendingPinResetRequests(),
     ]);
     return {
       users: users.filter((user) => user.active !== false),
@@ -94,9 +115,7 @@ async function loadDashboardData(): Promise<{
       news: content.news as News[],
       profiles: content.profiles as Profile[],
       audit_logs: content.audit_logs as AuditLog[],
-      pin_reset_requests: (content.pin_reset_requests as PinResetRequest[])
-        .filter((item) => item.status === "pending")
-        .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt)),
+      pin_reset_requests: pinResetRequests,
     };
   } catch (error) {
     console.error("[admin-dashboard] failed to load dashboard data", error);
@@ -113,6 +132,46 @@ function Metric({ label, value }: { label: string; value: number }) {
   );
 }
 
+function countLoggedInUsers(logs: AuditLog[]) {
+  const uniqueUsers = new Set(
+    logs
+      .filter((log) => log.role === "user" && log.action === "login")
+      .map((log) => {
+        const resource = String(log.resource ?? "");
+        if (resource.startsWith("users:")) {
+          return resource.slice("users:".length);
+        }
+        return String(log.actor ?? "").trim();
+      })
+      .filter(Boolean),
+  );
+  return uniqueUsers.size;
+}
+
+function buildUserLoginStats(logs: AuditLog[]) {
+  const counts = new Map<string, { key: string; label: string; count: number; at: string }>();
+  for (const log of logs) {
+    if (log.role !== "user" || log.action !== "login") continue;
+    const resource = String(log.resource ?? "");
+    const key = resource.startsWith("users:") ? resource.slice("users:".length) : String(log.actor ?? "").trim();
+    if (!key) continue;
+    const current = counts.get(key);
+    counts.set(key, {
+      key,
+      label: String(log.actor ?? "").trim() || key,
+      count: (current?.count ?? 0) + 1,
+      at: current?.at && current.at > log.at ? current.at : log.at,
+    });
+  }
+
+  return [...counts.values()]
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return b.at.localeCompare(a.at);
+    })
+    .slice(0, 8);
+}
+
 
 function ActivityList({ logs }: { logs: AuditLog[] }) {
   const adminLogs = logs.filter((log) => log.role === "admin").sort((a, b) => b.at.localeCompare(a.at));
@@ -125,7 +184,7 @@ function ActivityList({ logs }: { logs: AuditLog[] }) {
       {primary.map((log) => <ActivityItem log={log} key={log.id} />)}
       {rest.length ? (
         <details className="view-more">
-          <summary>View More</summary>
+          <summary>VIEW MORE</summary>
           {rest.map((log) => <ActivityItem log={log} key={log.id} />)}
         </details>
       ) : null}

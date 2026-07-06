@@ -717,6 +717,8 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
 }
 .home-hero-calendar {
   display: grid;
+  min-height: 0;
+  align-self: stretch;
 }
 .highlight-banner {
   position: relative;
@@ -1375,6 +1377,33 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
   border-top: 1px solid var(--outline-variant);
 }
 .mini-row:first-of-type { border-top: 0; }
+.panel-head + .mini-row-panel {
+  padding-top: 0;
+  border-top: 0;
+}
+.mini-row-label {
+  min-width: 0;
+  flex: 1;
+}
+.mini-row-knowledge {
+  align-items: flex-start;
+  gap: 16px;
+}
+.knowledge-title {
+  font-size: 15px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.mini-row-knowledge .badge {
+  flex-shrink: 0;
+  min-width: 92px;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
 .activity-list { display: grid; gap: 0; }
 .pin-reset-list { display: grid; gap: 12px; }
 .pin-reset-item {
@@ -1846,12 +1875,16 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
   .knowledge-grid { grid-template-columns: repeat(3, 1fr); }
   .home-grid { grid-template-columns: repeat(2, 1fr); }
   .home-hero-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .metric-grid { grid-template-columns: repeat(4, 1fr); }
+  .metric-grid { grid-template-columns: repeat(5, 1fr); }
   .dashboard-grid { grid-template-columns: 1fr 1fr; }
   .member-column-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wide { grid-column: 1 / -1; }
   .form-grid { grid-template-columns: repeat(2, 1fr); }
   .tag-selector-grid { grid-template-columns: 1fr 1fr; }
+  .mini-row-knowledge .badge {
+    min-width: 110px;
+    font-size: 12px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -1871,6 +1904,7 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
   .home-grid { grid-template-columns: repeat(4, 1fr); }
   .home-hero {
     grid-template-columns: minmax(0, 4fr) minmax(240px, 1.6fr) minmax(300px, 2fr);
+    grid-auto-rows: minmax(0, 1fr);
   }
   .home-hero-highlight,
   .home-hero-tabs,
@@ -1888,6 +1922,21 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
   .home-hero-tabs .section-tab {
     height: 100%;
     aspect-ratio: auto;
+  }
+  .home-hero-calendar .cal-popup-panel {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .home-hero-calendar .cal-grid {
+    padding: 8px 10px 6px;
+  }
+  .home-hero-calendar .cal-day {
+    height: 28px;
+  }
+  .home-hero-calendar .cal-events {
+    min-height: 0;
+    max-height: 100%;
+    overflow: auto;
   }
 }
 

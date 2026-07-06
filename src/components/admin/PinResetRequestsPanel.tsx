@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getStoredAdmin, getAdminToken } from "@/lib/client-session";
 import type { PinResetRequest } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +10,40 @@ export function PinResetRequestsPanel({ requests }: { requests: PinResetRequest[
   const [items, setItems] = useState(requests);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    const token = getAdminToken();
+    if (!token) return;
+
+    let active = true;
+
+    async function loadLatest() {
+      try {
+        const response = await fetch("/api/admin/pin-reset-requests", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+        const data = await response.json().catch(() => ({})) as { items?: PinResetRequest[]; error?: string };
+        if (!active || !response.ok || !Array.isArray(data.items)) return;
+        setItems(data.items);
+      } catch {
+        if (!active) return;
+      }
+    }
+
+    void loadLatest();
+    pollRef.current = setInterval(() => {
+      void loadLatest();
+    }, 10000);
+
+    return () => {
+      active = false;
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   async function submit(id: string, action: "approve" | "reject") {
     const admin = getStoredAdmin();
@@ -50,8 +84,8 @@ export function PinResetRequestsPanel({ requests }: { requests: PinResetRequest[
     <section className="panel wide">
       <div className="panel-head">
         <div>
-          <p className="eyebrow">Notifications</p>
-          <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>PIN reset requests</h2>
+          <p className="eyebrow">NOTIFICATIONS</p>
+          <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>PIN RESET REQUESTS</h2>
         </div>
       </div>
       {items.length === 0 ? (
