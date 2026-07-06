@@ -1,4 +1,5 @@
 import { listSheet } from "@/lib/google-sheets";
+import { applyPublishWindow } from "@/lib/publish";
 import { getBearerToken, verifyToken } from "@/lib/session-token";
 import { canAccess } from "@/lib/visibility";
 import type { Event, News } from "@/lib/types";
@@ -130,6 +131,7 @@ export async function GET(request: Request) {
   );
 
   const newsEvents: Event[] = newsItems
+    .map((item) => applyPublishWindow(item))
     .filter((n) => n.status === "published" && canAccess(membership, n.visibility))
     .map(newsToEvent)
     .filter((e): e is Event => e !== null);
