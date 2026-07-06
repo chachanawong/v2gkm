@@ -24,6 +24,7 @@ Create `.env.local`:
 
 ```bash
 GOOGLE_SCRIPT_SECRET="shared-secret-between-app-and-script"
+GOOGLE_SCRIPT_URL="https://script.google.com/macros/s/your-latest-deployment/exec"
 APP_SECRET="change-this-long-random-secret"
 YOUTUBE_API_KEY="optional-youtube-data-api-key"
 GOOGLE_DRIVE_CLIENT_ID="oauth-client-id"
@@ -31,8 +32,9 @@ GOOGLE_DRIVE_CLIENT_SECRET="oauth-client-secret"
 GOOGLE_DRIVE_REFRESH_TOKEN="oauth-refresh-token"
 ```
 
-The app is hard-wired to this Apps Script deployment: `https://script.google.com/macros/s/AKfycbzhQemA6bx5bYJGi3_LW2RYkOeIJuoqyuXHK_3TVl9rbN-WUmVeDGwxe_VF1S4OvCai/exec`
-Local and production now talk to the same Apps Script deployment by default. Keep `GOOGLE_SCRIPT_SECRET` in env so the shared secret does not live in the repo.
+If `GOOGLE_SCRIPT_URL` is set, the app will use that Apps Script deployment.
+Otherwise it falls back to the default deployment in the repo: `https://script.google.com/macros/s/AKfycbzhQemA6bx5bYJGi3_LW2RYkOeIJuoqyuXHK_3TVl9rbN-WUmVeDGwxe_VF1S4OvCai/exec`
+Keep `GOOGLE_SCRIPT_SECRET` in env so the shared secret does not live in the repo.
 If these variables are missing, the app uses mock data from `src/lib/mock-data.ts` so local development still works.
 `YOUTUBE_API_KEY` is optional, but required when you want upload date and view count to come from the real YouTube Data API instead of stored values.
 Admin uploads are hard-wired to Google Drive folder `1by5EUSXxgd39h1sN6CTXesfg77XYqMxk`. If Drive OAuth env is missing, uploads fall back to `public/uploads` for local development only.

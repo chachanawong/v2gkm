@@ -1,6 +1,5 @@
+import { getGoogleScriptUrl } from "./google-script";
 import type { Membership, User } from "./types";
-
-const appScriptUrl = "https://script.google.com/macros/s/AKfycbzhQemA6bx5bYJGi3_LW2RYkOeIJuoqyuXHK_3TVl9rbN-WUmVeDGwxe_VF1S4OvCai/exec";
 const cacheTtl = 30_000;
 
 type BoMemberRecord = {
@@ -99,7 +98,7 @@ async function scriptGet<T>(params: Record<string, string>): Promise<T> {
   const query = new URLSearchParams({ secret, ...params }).toString();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);
-  const response = await fetch(`${appScriptUrl}?${query}`, {
+  const response = await fetch(`${getGoogleScriptUrl()}?${query}`, {
     cache: "no-store",
     signal: controller.signal,
   }).finally(() => clearTimeout(timeout));
@@ -116,7 +115,7 @@ async function scriptPost<T>(body: Record<string, unknown>): Promise<T> {
   if (!secret) throw new Error("GOOGLE_SCRIPT_SECRET is required for bo_members access.");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);
-  const response = await fetch(appScriptUrl, {
+  const response = await fetch(getGoogleScriptUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ secret, ...body }),
@@ -183,13 +182,7 @@ export async function updateBoMemberLoginPin(phone: string, loginpinHash: string
   if (!member) throw new Error("ไม่พบสมาชิกใน bo_members");
 
   const normalizedHash = normalizeText(loginpinHash);
-  try {
-    await scriptPost({
-      action: "setBoMemberLoginPin",
-      phone: normalizeText(member.phone),
-      loginpinHash: normalizedHash,
-    });
-  } catch {
+  const writeHashWithUpsert = async () => {
     const next: BoMemberRecord = {
       ...member,
       phone: normalizeText(member.phone),
@@ -202,9 +195,31 @@ export async function updateBoMemberLoginPin(phone: string, loginpinHash: string
       sheet: "bo_members",
       item: next,
     });
+  };
+
+  try {
+    await scriptPost({
+      action: "setBoMemberLoginPin",
+      phone: normalizeText(member.phone),
+      loginpinHash: normalizedHash,
+    });
+  } catch {
+    await writeHashWithUpsert();
   }
 
   clearBoMembersCache();
+  const saved = await lookupBoMemberPin(member.phone);
+
+  if (saved.hash !== normalizedHash) {
+    await writeHashWithUpsert();
+    clearBoMembersCache();
+  }
+
+  const verified = await lookupBoMemberPin(member.phone);
+  if (verified.hash !== normalizedHash) {
+    throw new Error("บันทึก PIN hash ไม่สำเร็จ กรุณาตรวจ GOOGLE_SCRIPT_URL, GOOGLE_SCRIPT_SECRET และ deployment ของ Apps Script");
+  }
+
   return {
     ...member,
     loginpin: "",
@@ -218,12 +233,7 @@ export async function clearBoMemberLoginPin(phone: string) {
   const member = rows.find((row) => normalizePhone(row.phone) === normalizedPhone);
   if (!member) throw new Error("ไม่พบสมาชิกใน bo_members");
 
-  try {
-    await scriptPost({
-      action: "clearBoMemberLoginPin",
-      phone: normalizeText(member.phone),
-    });
-  } catch {
+  const clearWithUpsert = async () => {
     const next: BoMemberRecord = {
       ...member,
       phone: normalizeText(member.phone),
@@ -236,9 +246,29 @@ export async function clearBoMemberLoginPin(phone: string) {
       sheet: "bo_members",
       item: next,
     });
+  };
+
+  try {
+    await scriptPost({
+      action: "clearBoMemberLoginPin",
+      phone: normalizeText(member.phone),
+    });
+  } catch {
+    await clearWithUpsert();
   }
 
   clearBoMembersCache();
+  const saved = await lookupBoMemberPin(member.phone);
+  if (saved.hash || saved.legacyPin) {
+    await clearWithUpsert();
+    clearBoMembersCache();
+  }
+
+  const verified = await lookupBoMemberPin(member.phone);
+  if (verified.hash || verified.legacyPin) {
+    throw new Error("ล้าง PIN ไม่สำเร็จ กรุณาตรวจ GOOGLE_SCRIPT_URL, GOOGLE_SCRIPT_SECRET และ deployment ของ Apps Script");
+  }
+
   return {
     ...member,
     loginpin: "",
