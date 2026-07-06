@@ -8,6 +8,7 @@ import { normalizeCategoryType } from "@/lib/category-settings";
 import { getAdminToken, getStoredAdmin, isAdminRole } from "@/lib/client-session";
 import { maskPhone } from "@/lib/format";
 import { getPrimaryImage, normalizeCategories, normalizeImageUrl, normalizeImages } from "@/lib/normalize";
+import { requestGlobalConfirm, withGlobalLoading } from "@/lib/overlay";
 import { applyPublishWindow, computeContentStatus, splitByStatus, validatePublishWindow } from "@/lib/publish";
 import type { AdminRole, PublishFields } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
@@ -63,7 +64,6 @@ export function AdminResourceManager({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [active, setActive] = useState<Item | null>(null);
-  const [confirm, setConfirm] = useState<Item | null>(null);
   const [lineTarget, setLineTarget] = useState<Item | null>(null);
   const [lineMessage, setLineMessage] = useState("");
   const [lineGroupId, setLineGroupId] = useState("");
@@ -98,16 +98,18 @@ export function AdminResourceManager({
     const next = buildItemFromForm(base, form);
     if (!next) return null;
     setSaving(true);
-    const response = await fetch(`/api/admin/${resource}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getAdminToken()}`,
-        "x-admin-name": admin?.name ?? adminRole,
-      },
-      body: JSON.stringify(next),
-    });
-    const data = await response.json();
+    const { response, data } = await withGlobalLoading(async () => {
+      const nextResponse = await fetch(`/api/admin/${resource}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAdminToken()}`,
+          "x-admin-name": admin?.name ?? adminRole,
+        },
+        body: JSON.stringify(next),
+      });
+      return { response: nextResponse, data: await nextResponse.json() };
+    }, isCreate ? `กำลังสร้าง ${title}` : `กำลังบันทึก ${title}`);
     setSaving(false);
     if (!response.ok) {
       setError(data.error ?? "Save failed");
@@ -138,15 +140,17 @@ export function AdminResourceManager({
   async function preview(item: Item) {
     if (!publishable) return;
     setError("");
-    const response = await fetch("/api/admin/preview-token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getAdminToken()}`,
-      },
-      body: JSON.stringify({ resourceType: resource, resourceId: item.id, data: item }),
-    });
-    const data = await response.json();
+    const { response, data } = await withGlobalLoading(async () => {
+      const nextResponse = await fetch("/api/admin/preview-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAdminToken()}`,
+        },
+        body: JSON.stringify({ resourceType: resource, resourceId: item.id, data: item }),
+      });
+      return { response: nextResponse, data: await nextResponse.json() };
+    }, "กำลังสร้าง preview");
     if (response.ok) {
       window.open(data.url, "_blank", "noopener,noreferrer");
     } else {
@@ -222,28 +226,36 @@ export function AdminResourceManager({
     if (!missing.length) return;
     setCategoryOptions((current) => [...current, ...missing].sort((a, b) => a.localeCompare(b)));
     const type = normalizeCategoryType(resource);
-    await Promise.all(missing.map((name) => fetch("/api/admin/categories", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getAdminToken()}`,
-        "x-admin-name": admin?.name ?? adminRole,
-      },
-      body: JSON.stringify({ id: `categories-${crypto.randomUUID()}`, name, active: true, type, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }),
-    }).catch(() => undefined)));
+    await withGlobalLoading(async () => {
+      await Promise.all(missing.map((name) => fetch("/api/admin/categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAdminToken()}`,
+          "x-admin-name": admin?.name ?? adminRole,
+        },
+        body: JSON.stringify({ id: `categories-${crypto.randomUUID()}`, name, active: true, type, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }),
+      }).catch(() => undefined)));
+    }, "กำลังสร้างหมวดหมู่");
   }
 
-  async function removeItem() {
-    if (!confirm) return;
-    const response = await fetch(`/api/admin/${resource}?id=${confirm.id}`, {
+  async function removeItem(target: Item) {
+    const confirmed = await requestGlobalConfirm({
+      title: "Confirm Delete",
+      message: `ยืนยันการลบ ${String(target.title ?? target.name ?? target.id)} ใช่หรือไม่?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+    const response = await withGlobalLoading(async () => fetch(`/api/admin/${resource}?id=${target.id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${getAdminToken()}`,
       },
-    });
+    }), `กำลังลบ ${title}`);
     if (response.ok) {
-      setRows((current) => current.filter((item) => item.id !== confirm.id));
-      setConfirm(null);
+      setRows((current) => current.filter((item) => item.id !== target.id));
     }
   }
 
@@ -259,14 +271,14 @@ export function AdminResourceManager({
     setLineSending(true);
     setLineResult(null);
     try {
-      const response = await fetch("/api/admin/broadcast-line", {
+      const response = await withGlobalLoading(async () => fetch("/api/admin/broadcast-line", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getAdminToken()}`,
         },
         body: JSON.stringify({ message: lineMessage, groupId: lineGroupId || undefined }),
-      });
+      }), "กำลังส่งข้อความไป LINE");
       const data = await response.json() as { error?: string };
       if (response.ok) {
         setLineResult({ ok: true, message: "Sent to LINE group successfully." });
@@ -336,7 +348,7 @@ export function AdminResourceManager({
                     <Button variant="ghost" size="sm" icon={<Send size={15} />} tooltip="Publish to LINE group" onClick={() => openLinePublish(item)} />
                   ) : null}
                   <Button variant="ghost" size="sm" icon={<Pencil size={15} />} tooltip="Edit" onClick={() => setActive(item)} />
-                  <Button variant="danger" size="sm" icon={<Trash2 size={15} />} tooltip="Delete" onClick={() => setConfirm(item)} />
+                  <Button variant="danger" size="sm" icon={<Trash2 size={15} />} tooltip="Delete" onClick={() => void removeItem(item)} />
                 </div>
               </div>
             ))}
@@ -406,14 +418,6 @@ export function AdminResourceManager({
           ) : null}
           {error ? <p className="form-error">{error}</p> : null}
         </form>
-      </Modal>
-      <Modal
-        open={Boolean(confirm)}
-        title="Confirm action"
-        onClose={() => setConfirm(null)}
-        footer={<Button variant="danger" size="sm" onClick={removeItem}>Delete</Button>}
-      >
-        <p>Confirm delete {String(confirm?.title ?? confirm?.name ?? confirm?.id)}?</p>
       </Modal>
       <Modal
         open={Boolean(lineTarget)}

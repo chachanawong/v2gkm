@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getStoredAdmin, getAdminToken } from "@/lib/client-session";
+import { requestGlobalConfirm, withGlobalLoading } from "@/lib/overlay";
 import type { PinResetRequest } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 
@@ -52,11 +53,20 @@ export function PinResetRequestsPanel({ requests }: { requests: PinResetRequest[
       setError("Admin session หมดอายุ กรุณาเข้าสู่ระบบใหม่");
       return;
     }
+    const item = items.find((current) => current.id === id);
+    const confirmed = await requestGlobalConfirm({
+      title: action === "approve" ? "Confirm Approval" : "Confirm Rejection",
+      message: `${action === "approve" ? "ยืนยันการอนุมัติ" : "ยืนยันการปฏิเสธ"}คำขอของ ${item?.userName || "สมาชิก"} ใช่หรือไม่?`,
+      confirmText: action === "approve" ? "Approve" : "Reject",
+      cancelText: "Cancel",
+      tone: action === "approve" ? "default" : "danger",
+    });
+    if (!confirmed) return;
 
     setError("");
     setBusyId(id);
     try {
-      const response = await fetch("/api/admin/pin-reset-requests", {
+      const response = await withGlobalLoading(async () => fetch("/api/admin/pin-reset-requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -64,7 +74,7 @@ export function PinResetRequestsPanel({ requests }: { requests: PinResetRequest[
           "x-admin-name": admin?.name ?? "Admin",
         },
         body: JSON.stringify({ id, action }),
-      });
+      }), action === "approve" ? "กำลังอนุมัติคำขอ" : "กำลังปฏิเสธคำขอ");
 
       const data = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) {

@@ -1,27 +1,32 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 
 export function LoadingOverlay() {
-  useEffect(() => {
-    const overlay = () => document.getElementById("global-loading-overlay");
-    let timer: number | null = null;
+  const activeIds = useRef(new Set<number>());
+  const [active, setActive] = useState(false);
+  const [message, setMessage] = useState("กำลังดำเนินการ");
+  const [confirm, setConfirm] = useState<{
+    id: number;
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText: string;
+    tone: "default" | "danger";
+  } | null>(null);
 
+  useEffect(() => {
     const hide = () => {
-      const node = overlay();
-      if (!node) return;
-      node.classList.remove("is-active");
-      node.setAttribute("aria-hidden", "true");
-      if (timer) window.clearTimeout(timer);
+      activeIds.current.clear();
+      setActive(false);
+      setMessage("กำลังดำเนินการ");
     };
 
-    const show = () => {
-      const node = overlay();
-      if (!node) return;
-      if (timer) window.clearTimeout(timer);
-      node.classList.add("is-active");
-      node.setAttribute("aria-hidden", "false");
-      timer = window.setTimeout(hide, 1200);
+    const show = (nextMessage?: string) => {
+      setMessage(nextMessage || "กำลังดำเนินการ");
+      setActive(true);
     };
 
     const shouldShowForLink = (anchor: HTMLAnchorElement | null) => {
@@ -37,14 +42,58 @@ export function LoadingOverlay() {
 
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target.closest("a") : null;
-      if (shouldShowForLink(target as HTMLAnchorElement | null)) show();
+      if (shouldShowForLink(target as HTMLAnchorElement | null)) show("กำลังโหลดหน้า");
     };
     const onSubmit = (event: SubmitEvent) => {
-      if (!event.defaultPrevented) show();
+      if (!event.defaultPrevented) show("กำลังบันทึกข้อมูล");
+    };
+    const onShow = (event: Event) => {
+      const custom = event as CustomEvent<{ id: number; message?: string }>;
+      if (custom.detail?.id != null) {
+        activeIds.current.add(custom.detail.id);
+      }
+      show(custom.detail?.message);
+    };
+    const onHide = (event: Event) => {
+      const custom = event as CustomEvent<{ id?: number | null }>;
+      const id = custom.detail?.id;
+      if (id == null) {
+        activeIds.current.clear();
+        setActive(false);
+        setMessage("กำลังดำเนินการ");
+        return;
+      }
+      activeIds.current.delete(id);
+      if (activeIds.current.size === 0) {
+        setActive(false);
+        setMessage("กำลังดำเนินการ");
+      }
+    };
+    const onConfirmOpen = (event: Event) => {
+      const custom = event as CustomEvent<{
+        id: number;
+        title?: string;
+        message: string;
+        confirmText?: string;
+        cancelText?: string;
+        tone?: "default" | "danger";
+      }>;
+      if (!custom.detail) return;
+      setConfirm({
+        id: custom.detail.id,
+        title: custom.detail.title ?? "Confirm Action",
+        message: custom.detail.message,
+        confirmText: custom.detail.confirmText ?? "Confirm",
+        cancelText: custom.detail.cancelText ?? "Cancel",
+        tone: custom.detail.tone ?? "default",
+      });
     };
 
     document.addEventListener("click", onClick, true);
     document.addEventListener("submit", onSubmit, true);
+    window.addEventListener("v2g:loading-show", onShow as EventListener);
+    window.addEventListener("v2g:loading-hide", onHide as EventListener);
+    window.addEventListener("v2g:confirm-open", onConfirmOpen as EventListener);
     window.addEventListener("pageshow", hide);
     window.addEventListener("popstate", hide);
     window.addEventListener("load", hide);
@@ -53,21 +102,55 @@ export function LoadingOverlay() {
     return () => {
       document.removeEventListener("click", onClick, true);
       document.removeEventListener("submit", onSubmit, true);
+      window.removeEventListener("v2g:loading-show", onShow as EventListener);
+      window.removeEventListener("v2g:loading-hide", onHide as EventListener);
+      window.removeEventListener("v2g:confirm-open", onConfirmOpen as EventListener);
       window.removeEventListener("pageshow", hide);
       window.removeEventListener("popstate", hide);
       window.removeEventListener("load", hide);
       document.removeEventListener("readystatechange", hide);
-      if (timer) window.clearTimeout(timer);
     };
   }, []);
 
+  function resolveConfirm(confirmed: boolean) {
+    if (!confirm) return;
+    window.dispatchEvent(new CustomEvent("v2g:confirm-result", {
+      detail: { id: confirm.id, confirmed },
+    }));
+    setConfirm(null);
+  }
+
   return (
-    <div id="global-loading-overlay" className="loading-overlay" aria-hidden="true">
-      <div className="loading-card" role="status" aria-live="polite">
-        <span className="loading-spinner" />
-        <strong>Loading</strong>
-        <small>กำลังดำเนินการ</small>
+    <>
+      <div id="global-loading-overlay" className={active ? "loading-overlay is-active" : "loading-overlay"} aria-hidden={active ? "false" : "true"}>
+        <div className="loading-card" role="status" aria-live="polite">
+          <span className="loading-spinner" />
+          <strong>Loading</strong>
+          <small>{message}</small>
+        </div>
       </div>
-    </div>
+      <Modal
+        open={Boolean(confirm)}
+        title={confirm?.title ?? "Confirm Action"}
+        onClose={() => resolveConfirm(false)}
+        footer={(
+          <>
+            <Button type="button" variant="ghost" size="sm" onClick={() => resolveConfirm(false)}>
+              {confirm?.cancelText ?? "Cancel"}
+            </Button>
+            <Button
+              type="button"
+              variant={confirm?.tone === "danger" ? "danger" : "secondary"}
+              size="sm"
+              onClick={() => resolveConfirm(true)}
+            >
+              {confirm?.confirmText ?? "Confirm"}
+            </Button>
+          </>
+        )}
+      >
+        <p>{confirm?.message}</p>
+      </Modal>
+    </>
   );
 }

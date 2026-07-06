@@ -4,6 +4,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { requestGlobalConfirm, withGlobalLoading } from "@/lib/overlay";
 import { Button } from "@/components/ui/Button";
 
 type Step = "phone" | "enter-pin" | "set-pin";
@@ -59,12 +60,14 @@ export default function LoginPage() {
       return;
     }
     setLoading(true); setError(""); setNotice("");
-    const res = await fetch("/api/auth/user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: normalizePhoneInput(phone) }),
-    });
-    const data = await readJsonSafe<{ status?: string; error?: string }>(res);
+    const { res, data } = await withGlobalLoading(async () => {
+      const response = await fetch("/api/auth/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: normalizePhoneInput(phone) }),
+      });
+      return { res: response, data: await readJsonSafe<{ status?: string; error?: string }>(response) };
+    }, "กำลังตรวจสอบเบอร์โทรศัพท์");
     setLoading(false);
     if (!res.ok || data?.status === "not_found") {
       setError(data?.error ?? "ไม่พบเบอร์นี้ในระบบ กรุณาติดต่อผู้ดูแล");
@@ -82,12 +85,14 @@ export default function LoginPage() {
       return;
     }
     setLoading(true); setError(""); setNotice("");
-    const res = await fetch("/api/auth/user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: normalizePhoneInput(phone), loginPin: normalizePinInput(pin) }),
-    });
-    const data = await readJsonSafe<{ user?: object; token?: string; error?: string }>(res);
+    const { res, data } = await withGlobalLoading(async () => {
+      const response = await fetch("/api/auth/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: normalizePhoneInput(phone), loginPin: normalizePinInput(pin) }),
+      });
+      return { res: response, data: await readJsonSafe<{ user?: object; token?: string; error?: string }>(response) };
+    }, "กำลังเข้าสู่ระบบ");
     setLoading(false);
     if (!res.ok) { setError(data?.error ?? "Login PIN ไม่ถูกต้อง"); return; }
     if (!data?.user || !data.token) {
@@ -106,12 +111,14 @@ export default function LoginPage() {
     if (pin !== confirmPin) { setError("PIN ทั้งสองไม่ตรงกัน"); return; }
     if (!/^\d{6}$/.test(pin)) { setError("PIN ต้องเป็นตัวเลข 6 หลัก"); return; }
     setLoading(true); setError(""); setNotice("");
-    const res = await fetch("/api/auth/user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: normalizePhoneInput(phone), newPin: normalizePinInput(pin) }),
-    });
-    const data = await readJsonSafe<{ user?: object; token?: string; error?: string }>(res);
+    const { res, data } = await withGlobalLoading(async () => {
+      const response = await fetch("/api/auth/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: normalizePhoneInput(phone), newPin: normalizePinInput(pin) }),
+      });
+      return { res: response, data: await readJsonSafe<{ user?: object; token?: string; error?: string }>(response) };
+    }, "กำลังบันทึก PIN");
     setLoading(false);
     if (!res.ok) { setError(data?.error ?? "เกิดข้อผิดพลาด"); return; }
     if (!data?.user || !data.token) {
@@ -126,13 +133,22 @@ export default function LoginPage() {
 
   async function handleRequestReset() {
     if (loading) return;
-    setLoading(true); setError(""); setNotice("");
-    const res = await fetch("/api/auth/user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: normalizePhoneInput(phone), requestReset: true }),
+    const confirmed = await requestGlobalConfirm({
+      title: "Confirm Reset PIN",
+      message: "ยืนยันการส่งคำขอรีเซ็ต PIN ไปยังผู้ดูแล?",
+      confirmText: "Send Request",
+      cancelText: "Cancel",
     });
-    const data = await readJsonSafe<{ success?: boolean; message?: string; error?: string }>(res);
+    if (!confirmed) return;
+    setLoading(true); setError(""); setNotice("");
+    const { res, data } = await withGlobalLoading(async () => {
+      const response = await fetch("/api/auth/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: normalizePhoneInput(phone), requestReset: true }),
+      });
+      return { res: response, data: await readJsonSafe<{ success?: boolean; message?: string; error?: string }>(response) };
+    }, "กำลังส่งคำขอรีเซ็ต PIN");
     setLoading(false);
     if (!res.ok) {
       setError(data?.error ?? "ส่งคำขอรีเซ็ต PIN ไม่สำเร็จ");

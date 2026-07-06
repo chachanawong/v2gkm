@@ -414,17 +414,42 @@ function SelectedDetail({ selected, masterCategories }: { selected: SelectedItem
   }
   if (selected.type === "profile") {
     const item = selected.item;
+    const images = normalizeImages(item.images);
+    const [primaryImage, ...galleryImages] = images;
     return (
-      <div className="knowledge-preview profile-preview">
-        <div className="knowledge-card-meta">
+      <div className="knowledge-preview profile-preview profile-preview-detail">
+        <div className="profile-preview-summary">
           <div className="knowledge-card-meta-tags">
             <MasterCategoryPills categories={masterCategories} itemCategories={item.categories} type="profiles" />
-            {item.pin ? <VisibilityBadge value={item.pin} /> : null}
           </div>
-          <span className="knowledge-card-date">{item.position}</span>
+          <p className="profile-preview-position">{item.position}</p>
         </div>
-        <p className="multiline">{item.bio}</p>
-        <ImageGrid images={normalizeImages(item.images)} title={item.name} />
+
+        {primaryImage ? (
+          <div className="profile-preview-hero">
+            <div className="profile-preview-portrait">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={normalizeImageUrl(primaryImage)}
+                alt={item.name}
+                onError={(e) => e.currentTarget.parentElement?.classList.add("image-placeholder")}
+              />
+            </div>
+            {item.pin ? <VisibilityBadge value={`PIN ${item.pin}`} /> : null}
+          </div>
+        ) : null}
+
+        <section className="profile-preview-section">
+          <h3>รายละเอียดประวัติ</h3>
+          <p className="multiline">{item.bio}</p>
+        </section>
+
+        {galleryImages.length ? (
+          <section className="profile-preview-section">
+            <h3>รูปภาพเพิ่มเติม</h3>
+            <ImageGrid images={galleryImages} title={item.name} className="profile-gallery-grid" />
+          </section>
+        ) : null}
       </div>
     );
   }
@@ -491,10 +516,10 @@ function KnowledgeVideoEmbed({
   );
 }
 
-function ImageGrid({ images, title }: { images: string[]; title: string }) {
+function ImageGrid({ images, title, className }: { images: string[]; title: string; className?: string }) {
   if (!images.length) return null;
   return (
-    <div className="gallery-grid">
+    <div className={className ? `gallery-grid ${className}` : "gallery-grid"}>
       {images.map((image, index) => (
         <div className="gallery-image" key={`${image}-${index}`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

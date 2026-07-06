@@ -1288,6 +1288,59 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
 .profile-gallery-image img {
   object-fit: contain;
 }
+.profile-preview-detail {
+  gap: 20px;
+}
+.profile-preview-summary {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+}
+.profile-preview-position {
+  margin: 0;
+  color: var(--text-secondary, #666);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.profile-preview-hero {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+.profile-preview-portrait {
+  position: relative;
+  width: min(320px, 100%);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+}
+.profile-preview-portrait img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.profile-preview-section {
+  display: grid;
+  gap: 8px;
+}
+.profile-preview-section h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.profile-preview-section p {
+  margin: 0;
+}
+.profile-gallery-grid {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 180px));
+  justify-content: center;
+}
 
 .admin-section { display: grid; gap: 24px; }
 .metric-grid {

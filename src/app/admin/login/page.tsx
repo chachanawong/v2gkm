@@ -4,6 +4,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { withGlobalLoading } from "@/lib/overlay";
 import { Button } from "@/components/ui/Button";
 
 async function readJsonSafe<T>(response: Response): Promise<T | null> {
@@ -27,12 +28,17 @@ export default function AdminLoginPage() {
     if (loading) return;
     setLoading(true);
     setError("");
-    const response = await fetch("/api/auth/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await readJsonSafe<{ admin?: object; token?: string; error?: string }>(response);
+    const { response, data } = await withGlobalLoading(async () => {
+      const nextResponse = await fetch("/api/auth/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      return {
+        response: nextResponse,
+        data: await readJsonSafe<{ admin?: object; token?: string; error?: string }>(nextResponse),
+      };
+    }, "กำลังเข้าสู่ระบบผู้ดูแล");
     setLoading(false);
     if (!response.ok) {
       setError(data?.error ?? "Login failed");

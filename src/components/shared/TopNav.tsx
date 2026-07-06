@@ -4,13 +4,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { maskPhone } from "@/lib/format";
+import { requestGlobalConfirm, showGlobalLoading } from "@/lib/overlay";
 import { canAccessResource } from "@/lib/permissions";
 import { getUserToken } from "@/lib/client-session";
 import { useProgress } from "@/lib/useProgress";
 import type { AdminRole, LearningPath, Lesson, User } from "@/lib/types";
 
 export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: User | null; role?: AdminRole }) {
-  function logout() {
+  async function logout() {
+    const confirmed = await requestGlobalConfirm({
+      title: "Confirm Logout",
+      message: `ต้องการออกจากระบบ${admin ? "ผู้ดูแล" : ""}ใช่หรือไม่?`,
+      confirmText: "Logout",
+      cancelText: "Stay",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    showGlobalLoading("กำลังออกจากระบบ");
     const isAdmin = admin;
     const adminToken = localStorage.getItem("v2g_admin_token");
     if (isAdmin) {
@@ -58,18 +69,15 @@ function MembershipExpiryBadge() {
     loading: boolean;
     daysRemaining: number | null;
     latestPaymentDate?: string | null;
-  }>({
-    loading: true,
+  }>(() => ({
+    loading: Boolean(getUserToken()),
     daysRemaining: null,
     latestPaymentDate: null,
-  });
+  }));
 
   useEffect(() => {
     const token = getUserToken();
-    if (!token) {
-      setState({ loading: false, daysRemaining: null, latestPaymentDate: null });
-      return;
-    }
+    if (!token) return;
 
     let active = true;
     fetch("/api/user/membership-status", {
