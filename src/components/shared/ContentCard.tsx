@@ -12,7 +12,6 @@ export function ContentCard({
   href,
   meta,
   children,
-  imageTags,
   imageAspect,
   imageFit,
 }: {
@@ -21,7 +20,6 @@ export function ContentCard({
   href?: string;
   meta?: ReactNode;
   children?: ReactNode;
-  imageTags?: string[];
   imageAspect?: string;
   imageFit?: "cover" | "contain";
 }) {
@@ -38,13 +36,6 @@ export function ContentCard({
             onError={() => setImageFailed(true)}
             style={imageFit ? { objectFit: imageFit } : undefined}
           />
-          {imageTags?.length ? (
-            <div className="card-image-tags">
-              {imageTags.slice(0, 2).map((tag) => (
-                <span className="card-image-tag" key={tag}>{tag}</span>
-              ))}
-            </div>
-          ) : null}
         </div>
       ) : normalizedImage ? <div className="card-image image-placeholder" /> : null}
       <div className="card-body">

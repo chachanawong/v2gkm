@@ -11,7 +11,7 @@ export type User = {
   membership: Membership;
   uplinePlatinum?: string;
   active?: boolean;
-  loginPin?: string;
+  hasLoginPin?: boolean;
 };
 
 export type Admin = {
@@ -59,6 +59,7 @@ export type News = PublishFields & {
   eventChannel?: string;
   images: string[];
   categories?: string[];
+  pinned?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -84,22 +85,24 @@ export type AuditLog = {
   at: string;
 };
 
-export type UserPin = {
-  phone: string;
-  loginPin: string;
-};
-
-export type Register = {
-  phone: string;
-  loginpin: string;
-};
-
 export type PreviewToken = {
   token: string;
   resourceType: "knowledge" | "news" | "profiles";
   resourceId: string;
   expiresAt: string;
   data?: Record<string, unknown>;
+};
+
+export type PinResetRequest = {
+  id: string;
+  phone: string;
+  userId: string;
+  userName: string;
+  status: "pending" | "approved" | "rejected";
+  requestedAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  note?: string;
 };
 
 export type ContentItem = Knowledge | News | Profile;

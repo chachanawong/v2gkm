@@ -19,8 +19,6 @@ const HEADERS = [
   "imageName"
 ];
 const BO_MEMBERS_SHEET_NAME = "bo_members";
-const REGISTER_SHEET_NAME = "register";
-const USER_PINS_SHEET_NAME = "user_pins";
 const BO_PAYMENTS_SHEET_NAME = "bo_payments";
 const BO_CHECKINS_SHEET_NAME = "bo_checkins";
 const ACCOUNT_TRAN_SHEET_NAME = "account_tran";
@@ -51,16 +49,9 @@ const BO_MEMBER_HEADERS = [
   "phone",
   "memberType",
   "loginpin",
+  "loginpin_hash",
   "memberpin",
   "status"
-];
-const REGISTER_HEADERS = [
-  "phone",
-  "loginpin"
-];
-const USER_PINS_HEADERS = [
-  "phone",
-  "loginPin"
 ];
 const APP_SHEET_DEFS = {
   bo_members: {
@@ -88,7 +79,7 @@ const APP_SHEET_DEFS = {
     key: "id"
   },
   categories: {
-    headers: ["id", "name", "active"],
+    headers: ["id", "name", "active", "type"],
     key: "id"
   },
   events: {
@@ -115,18 +106,14 @@ const APP_SHEET_DEFS = {
     headers: ["id", "actor", "role", "action", "resource", "at"],
     key: "id"
   },
+  pin_reset_requests: {
+    headers: ["id", "phone", "userId", "userName", "status", "requestedAt", "resolvedAt", "resolvedBy", "note"],
+    key: "id"
+  },
   preview_tokens: {
     headers: ["token", "resourceType", "resourceId", "expiresAt", "data"],
     key: "token"
   },
-  user_pins: {
-    headers: USER_PINS_HEADERS,
-    key: "phone"
-  },
-  register: {
-    headers: REGISTER_HEADERS,
-    key: "phone"
-  }
 };
 const BO_PAYMENT_HEADERS = [
   "id",
@@ -253,6 +240,18 @@ function doPost(e) {
 
     if (action === "upsert") {
       result = handleUpsertSheet_(payload);
+      bumpDataVersionIfNeeded_(action);
+      return result;
+    }
+
+    if (action === "setBoMemberLoginPin") {
+      result = handleSetBoMemberLoginPin_(payload);
+      bumpDataVersionIfNeeded_(action);
+      return result;
+    }
+
+    if (action === "clearBoMemberLoginPin") {
+      result = handleClearBoMemberLoginPin_(payload);
       bumpDataVersionIfNeeded_(action);
       return result;
     }
@@ -518,10 +517,13 @@ function appendBoMember_(payload) {
     phone,
     normalizeMemberType_(payload.memberType),
     payload.loginpin || "",
+    payload.loginpin_hash || "",
+    payload.memberpin || "",
     "active"
   ]);
   setTextCell_(sheet, rowNumber, "phone", phone);
   setTextCell_(sheet, rowNumber, "loginpin", payload.loginpin || "");
+  setTextCell_(sheet, rowNumber, "loginpin_hash", payload.loginpin_hash || "");
 }
 
 function handleUpsertSheet_(payload) {
@@ -567,14 +569,6 @@ function getManagedSheetDef_(sheetName) {
 }
 
 function upsertManagedSheetItem_(sheetName, item) {
-  if (sheetName === REGISTER_SHEET_NAME) {
-    return upsertRegisterPin_(item);
-  }
-
-  if (sheetName === USER_PINS_SHEET_NAME) {
-    return upsertUserPin_(item);
-  }
-
   const def = getManagedSheetDef_(sheetName);
   const normalizedItem = normalizeManagedSheetItem_(sheetName, item, def.key);
   const sheet = getOrCreateSheetByName_(sheetName, def.headers);
@@ -619,12 +613,20 @@ function deleteManagedSheetItem_(sheetName, id) {
 function normalizeManagedSheetItem_(sheetName, item, keyHeader) {
   const normalized = Object.assign({}, item);
 
+  Object.keys(normalized).forEach(function(key) {
+    const value = normalized[key];
+    if (Array.isArray(value) || isPlainObject_(value)) {
+      normalized[key] = JSON.stringify(value);
+    }
+  });
+
   if (keyHeader === "phone") {
     normalized.phone = normalizePhone_(normalized.phone || "");
   }
 
   if (sheetName === "bo_members") {
     normalized.loginpin = String(normalized.loginpin || "").trim();
+    normalized.loginpin_hash = String(normalized.loginpin_hash || "").trim();
     normalized.memberpin = String(normalized.memberpin || normalized.pin || "").trim();
     normalized.name = String(normalized.name || "").trim();
     normalized.upline = String(normalized.upline || "").trim();
@@ -632,49 +634,20 @@ function normalizeManagedSheetItem_(sheetName, item, keyHeader) {
     normalized.status = String(normalized.status || "active").trim().toLowerCase();
   }
 
-  if (sheetName === "register") {
-    normalized.loginpin = String(normalized.loginpin || "").trim();
+  if (sheetName === "categories") {
+    normalized.name = String(normalized.name || "").trim();
+    normalized.type = String(normalized.type || "").trim().toLowerCase();
   }
 
-  if (sheetName === "user_pins") {
-    normalized.loginPin = String(normalized.loginPin || "").trim();
+  if (sheetName === "knowledge") {
+    normalized.uploadDate = normalizeSheetDate_(normalized.uploadDate || normalized.createdAt || new Date().toISOString());
   }
 
   return normalized;
 }
 
-function upsertRegisterPin_(item) {
-  const phone = normalizePhone_(item.phone);
-  const loginpin = String(item.loginpin || "").trim();
-
-  if (!phone || !loginpin) {
-    throw new Error("Missing phone or loginpin for register upsert.");
-  }
-
-  const sheet = getOrCreateSheetByName_(REGISTER_SHEET_NAME, REGISTER_HEADERS);
-  upsertRowByKey_(sheet, REGISTER_HEADERS, "phone", {
-    phone: phone,
-    loginpin: loginpin
-  });
-  setBoMemberLoginPinByPhone_(phone, loginpin);
-  return { phone: phone, loginpin: loginpin };
-}
-
-function upsertUserPin_(item) {
-  const phone = normalizePhone_(item.phone);
-  const loginPin = String(item.loginPin || "").trim();
-
-  if (!phone || !loginPin) {
-    throw new Error("Missing phone or loginPin for user_pins upsert.");
-  }
-
-  const sheet = getOrCreateSheetByName_(USER_PINS_SHEET_NAME, USER_PINS_HEADERS);
-  upsertRowByKey_(sheet, USER_PINS_HEADERS, "phone", {
-    phone: phone,
-    loginPin: loginPin
-  });
-  setBoMemberLoginPinByPhone_(phone, loginPin);
-  return { phone: phone, loginPin: loginPin };
+function isPlainObject_(value) {
+  return Object.prototype.toString.call(value) === "[object Object]";
 }
 
 function setBoMemberLoginPinByPhone_(phone, loginpin) {
@@ -693,19 +666,90 @@ function setBoMemberLoginPinByPhone_(phone, loginpin) {
   const headers = values[0];
   const phoneColumn = headers.indexOf("phone");
   const loginPinColumn = headers.indexOf("loginpin");
+  const loginPinHashColumn = headers.indexOf("loginpin_hash");
 
-  if (phoneColumn === -1 || loginPinColumn === -1) {
+  if (phoneColumn === -1 || loginPinColumn === -1 || loginPinHashColumn === -1) {
     return false;
   }
 
   for (let index = 1; index < values.length; index += 1) {
     if (normalizePhone_(values[index][phoneColumn]) === normalizedPhone) {
-      setTextCell_(sheet, index + 1, "loginpin", loginpin);
+      setTextCell_(sheet, index + 1, "loginpin", "");
+      setTextCell_(sheet, index + 1, "loginpin_hash", loginpin);
       return true;
     }
   }
 
   return false;
+}
+
+function handleSetBoMemberLoginPin_(payload) {
+  const phone = normalizePhone_(payload.phone);
+  const loginpin = String(payload.loginpinHash || payload.loginpin_hash || payload.loginpin || payload.loginPin || "").trim();
+
+  if (!phone || !loginpin) {
+    throw new Error("Missing phone or loginpin.");
+  }
+
+  const updated = setBoMemberLoginPinByPhone_(phone, loginpin);
+  if (!updated) {
+    throw new Error(`Member not found for phone: ${phone}`);
+  }
+
+  return createJsonOutput({
+    success: true,
+    phone: phone,
+    loginpin_hash: loginpin
+  });
+}
+
+function clearBoMemberLoginPinByPhone_(phone) {
+  const normalizedPhone = normalizePhone_(phone);
+  if (!normalizedPhone) {
+    return false;
+  }
+
+  const sheet = getOrCreateSheetByName_(BO_MEMBERS_SHEET_NAME, BO_MEMBER_HEADERS);
+  const values = sheet.getDataRange().getValues();
+
+  if (values.length <= 1) {
+    return false;
+  }
+
+  const headers = values[0];
+  const phoneColumn = headers.indexOf("phone");
+
+  if (phoneColumn === -1) {
+    return false;
+  }
+
+  for (let index = 1; index < values.length; index += 1) {
+    if (normalizePhone_(values[index][phoneColumn]) === normalizedPhone) {
+      setTextCell_(sheet, index + 1, "loginpin", "");
+      setTextCell_(sheet, index + 1, "loginpin_hash", "");
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function handleClearBoMemberLoginPin_(payload) {
+  const phone = normalizePhone_(payload.phone);
+
+  if (!phone) {
+    throw new Error("Missing phone.");
+  }
+
+  const updated = clearBoMemberLoginPinByPhone_(phone);
+  if (!updated) {
+    throw new Error("Member not found for phone: " + phone);
+  }
+
+  return createJsonOutput({
+    success: true,
+    phone: phone
+  });
 }
 
 function handleSaveBoPayment_(payload) {
@@ -1781,11 +1825,11 @@ function buildColumnSpans_(columns) {
 }
 
 function normalizeSheetRecordValue_(header, value) {
-  if (header === "phone") {
+  if (header === "phone" || header === "loginpin" || header === "loginPin" || header === "loginpin_hash") {
     return String(value || "");
   }
 
-  if (header === "date") {
+  if (header === "date" || header === "uploadDate") {
     return normalizeSheetDate_(value);
   }
 
@@ -2200,7 +2244,7 @@ function upsertRowByKey_(sheet, headers, keyHeader, item) {
   }
 
   headers.forEach(function(header) {
-    if (header === "phone" || header === "loginpin" || header === "loginPin") {
+    if (header === "phone" || header === "loginpin" || header === "loginPin" || header === "loginpin_hash") {
       setTextCell_(sheet, rowNumber, header, item[header] || "");
     }
   });

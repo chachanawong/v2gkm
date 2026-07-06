@@ -1,7 +1,10 @@
 import { findUserPin, loginUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
+import { listSheet, upsertSheet } from "@/lib/google-sheets";
 import { updateBoMemberLoginPin } from "@/lib/bo-members";
+import { hashPin, verifyPin } from "@/lib/pin";
 import { createUserToken } from "@/lib/session-token";
+import type { PinResetRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,20 +15,46 @@ function normalizePhone(v: string) {
 
 async function savePin(phone: string, pin: string, userName: string, userId: string) {
   const norm = normalizePhone(phone);
-  await updateBoMemberLoginPin(norm, pin);
+  await updateBoMemberLoginPin(norm, hashPin(pin, norm));
   await writeAuditLog({ actor: userName, role: "user", action: "set_pin", resource: `users:${userId}` });
 }
 
-async function findPin(phone: string): Promise<string | null> {
+async function findPin(phone: string) {
   return findUserPin(phone);
 }
 
+async function createResetRequest(phone: string, userName: string, userId: string) {
+  const norm = normalizePhone(phone);
+  const requests = await listSheet("pin_reset_requests");
+  const existing = requests.find((item) => item.phone === norm && item.status === "pending");
+  const next: PinResetRequest = existing
+    ? { ...existing, requestedAt: new Date().toISOString(), note: "Requested from login page" }
+    : {
+        id: `pin-reset-${crypto.randomUUID()}`,
+        phone: norm,
+        userId,
+        userName,
+        status: "pending",
+        requestedAt: new Date().toISOString(),
+        note: "Requested from login page",
+      };
+  await upsertSheet("pin_reset_requests", next);
+  await writeAuditLog({ actor: userName, role: "user", action: "request_pin_reset", resource: `users:${userId}` });
+}
+
 export async function POST(request: Request) {
-  const body = await request.json() as { phone?: string; loginPin?: string; newPin?: string };
-  const { phone, loginPin, newPin } = body;
+  const body = await request.json() as { phone?: string; loginPin?: string; newPin?: string; requestReset?: boolean };
+  const { phone, loginPin, newPin, requestReset } = body;
 
   if (!/^\d{9,12}$/.test(String(phone ?? "").replace(/\D/g, ""))) {
     return Response.json({ error: "Invalid phone number" }, { status: 400 });
+  }
+
+  if (requestReset) {
+    const user = await loginUser(String(phone));
+    if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
+    await createResetRequest(String(phone), user.name, user.id);
+    return Response.json({ success: true, message: "ส่งคำขอรีเซ็ต PIN ไปยัง Admin แล้ว" });
   }
 
   // Step 1: phone-only check — return PIN status
@@ -33,7 +62,7 @@ export async function POST(request: Request) {
     const user = await loginUser(String(phone));
     if (!user) return Response.json({ status: "not_found" }, { status: 401 });
     const existingPin = await findPin(String(phone));
-    return Response.json({ status: existingPin ? "has_pin" : "needs_pin" });
+    return Response.json({ status: existingPin.hash || existingPin.legacyPin ? "has_pin" : "needs_pin" });
   }
 
   // Step 2a: verify existing PIN
@@ -41,8 +70,14 @@ export async function POST(request: Request) {
     const user = await loginUser(String(phone));
     if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
     const existingPin = await findPin(String(phone));
-    if (!existingPin) return Response.json({ error: "ยังไม่มี Login PIN กรุณาตั้งค่า PIN ก่อน" }, { status: 400 });
-    if (existingPin !== loginPin) return Response.json({ error: "Login PIN ไม่ถูกต้อง" }, { status: 401 });
+    if (!existingPin.hash && !existingPin.legacyPin) return Response.json({ error: "ยังไม่มี Login PIN กรุณาตั้งค่า PIN ก่อน" }, { status: 400 });
+    const valid = existingPin.hash
+      ? verifyPin(loginPin, String(phone), existingPin.hash)
+      : existingPin.legacyPin === loginPin;
+    if (!valid) return Response.json({ error: "Login PIN ไม่ถูกต้อง" }, { status: 401 });
+    if (!existingPin.hash && existingPin.legacyPin === loginPin) {
+      await updateBoMemberLoginPin(normalizePhone(String(phone)), hashPin(loginPin, String(phone)));
+    }
     await writeAuditLog({ actor: user.name, role: "user", action: "login", resource: `users:${user.id}` });
     return Response.json({ user, token: createUserToken({ id: user.id, membership: user.membership }) });
   }
@@ -55,7 +90,7 @@ export async function POST(request: Request) {
     const user = await loginUser(String(phone));
     if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });
     const existingPin = await findPin(String(phone));
-    if (existingPin) return Response.json({ error: "มี PIN อยู่แล้ว กรุณาใช้ PIN เดิม" }, { status: 409 });
+    if (existingPin.hash || existingPin.legacyPin) return Response.json({ error: "มี PIN อยู่แล้ว กรุณาใช้ PIN เดิม" }, { status: 409 });
     await savePin(String(phone), newPin, user.name, user.id);
     return Response.json({ user, token: createUserToken({ id: user.id, membership: user.membership }) });
   }

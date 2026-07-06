@@ -1,8 +1,9 @@
 import { getGoogleAccessToken, hasGoogleServiceAccountConfig } from "./google-auth";
 import { db } from "./mock-data";
-import { normalizeCategories, normalizeImages } from "./normalize";
+import { normalizeCategories, normalizeDateOnly, normalizeImages } from "./normalize";
 import { applyPublishWindow } from "./publish";
-import type { Admin, AuditLog, Category, Event, EventRegistration, Knowledge, Lesson, LearningPath, News, PreviewToken, Profile, Register, ResourceType, User, UserPin, UserProgress } from "./types";
+import { normalizeMembership } from "./visibility";
+import type { Admin, AuditLog, Category, Event, EventRegistration, Knowledge, Lesson, LearningPath, News, PinResetRequest, PreviewToken, Profile, ResourceType, User, UserProgress } from "./types";
 
 type SheetMap = {
   users: User;
@@ -18,8 +19,7 @@ type SheetMap = {
   user_progress: UserProgress;
   audit_logs: AuditLog;
   preview_tokens: PreviewToken;
-  user_pins: UserPin;
-  register: Register;
+  pin_reset_requests: PinResetRequest;
 };
 
 type SheetName = keyof SheetMap;
@@ -30,7 +30,7 @@ const sheetHeaders: Record<SheetName, string[]> = {
   knowledge: ["id", "title", "youtubeUrl", "youtubeId", "thumbnail", "categories", "uploadDate", "viewCount", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt"],
   profiles: ["id", "pin", "name", "bio", "position", "visibility", "images", "status", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories"],
   news: ["id", "title", "body", "eventDate", "eventTime", "eventChannel", "images", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories", "pinned"],
-  categories: ["id", "name", "active"],
+  categories: ["id", "name", "active", "type"],
   events: ["id", "title", "description", "eventType", "startDate", "endDate", "location", "capacity", "images", "visibility", "status", "pinned", "createdAt", "updatedAt"],
   event_registrations: ["id", "eventId", "userId", "userName", "userPhone", "status", "createdAt"],
   learning_paths: ["id", "title", "description", "thumbnail", "visibility", "status", "order", "createdAt", "updatedAt"],
@@ -38,8 +38,7 @@ const sheetHeaders: Record<SheetName, string[]> = {
   user_progress: ["id", "userId", "lessonId", "pathId", "completed", "quizScore", "completedAt"],
   audit_logs: ["id", "actor", "role", "action", "resource", "at"],
   preview_tokens: ["token", "resourceType", "resourceId", "expiresAt", "data"],
-  user_pins: ["phone", "loginPin"],
-  register: ["phone", "loginpin"],
+  pin_reset_requests: ["id", "phone", "userId", "userName", "status", "requestedAt", "resolvedAt", "resolvedBy", "note"],
 };
 
 const resourceToSheet: Record<ResourceType, SheetName> = {
@@ -157,9 +156,27 @@ function objectToRow<T>(headers: string[], item: T) {
 }
 
 function normalizeSheetItem(item: Record<string, unknown>) {
-
   if (process.env.NODE_ENV === "development") {
     console.log("[SHEETS RAW ITEM]", item);
+  }
+
+  if ("visibility" in item) {
+    item.visibility = normalizeMembership(String(item.visibility ?? ""));
+  }
+
+  if ("status" in item) {
+    const status = String(item.status ?? "").trim().toLowerCase();
+    item.status = status === "draft" || status === "scheduled" || status === "unpublished" || status === "published"
+      ? status
+      : "published";
+  }
+
+  if ("createdAt" in item) {
+    item.createdAt = String(item.createdAt ?? "").trim();
+  }
+
+  if ("updatedAt" in item) {
+    item.updatedAt = String(item.updatedAt ?? "").trim();
   }
 
   if ("categories" in item) {
@@ -168,6 +185,18 @@ function normalizeSheetItem(item: Record<string, unknown>) {
 
   if ("images" in item) {
     item.images = normalizeImages(item.images);
+  }
+
+  if ("uploadDate" in item) {
+    item.uploadDate = normalizeDateOnly(item.uploadDate);
+  }
+
+  if ("id" in item && "createdAt" in item && !item.createdAt) {
+    item.createdAt = String(item.id ?? "");
+  }
+
+  if ("updatedAt" in item && !item.updatedAt) {
+    item.updatedAt = String(item.createdAt ?? "");
   }
 
   if (process.env.NODE_ENV === "development") {
@@ -192,8 +221,7 @@ function mockList<T extends SheetName>(sheet: T): SheetMap[T][] {
     user_progress: db.userProgress,
     audit_logs: db.auditLogs,
     preview_tokens: db.previewTokens,
-    user_pins: db.userPins,
-    register: [],
+    pin_reset_requests: db.pinResetRequests,
   };
   return map[sheet] as SheetMap[T][];
 }
@@ -213,11 +241,10 @@ function mockUpsert<T extends SheetName>(sheet: T, item: SheetMap[T]) {
     user_progress: db.userProgress,
     audit_logs: db.auditLogs,
     preview_tokens: db.previewTokens,
-    user_pins: db.userPins,
-    register: [],
+    pin_reset_requests: db.pinResetRequests,
   };
   const rows = map[sheet] as unknown[];
-  const idKey = sheet === "preview_tokens" ? "token" : (sheet === "user_pins" || sheet === "register") ? "phone" : "id";
+  const idKey = sheet === "preview_tokens" ? "token" : "id";
   const index = rows.findIndex((row) => String((row as Record<string, unknown>)[idKey]) === String((item as Record<string, unknown>)[idKey]));
   if (index >= 0) rows[index] = item;
   else rows.unshift(item);
@@ -285,7 +312,7 @@ export async function upsertSheet<T extends SheetName>(sheet: T, item: SheetMap[
   }
   if (!hasSheetsConfig()) return mockUpsert(sheet, item);
   const rows = await listSheet(sheet);
-  const idKey = sheet === "preview_tokens" ? "token" : (sheet === "user_pins" || sheet === "register") ? "phone" : "id";
+  const idKey = sheet === "preview_tokens" ? "token" : "id";
   const index = rows.findIndex((row) => String((row as Record<string, unknown>)[idKey]) === String((item as Record<string, unknown>)[idKey]));
   const values = [objectToRow(sheetHeaders[sheet], item)];
   if (index >= 0) {
@@ -324,17 +351,16 @@ export async function deleteFromSheet<T extends SheetName>(sheet: T, id: string)
       user_progress: db.userProgress,
       audit_logs: db.auditLogs,
       preview_tokens: db.previewTokens,
-      user_pins: db.userPins,
-      register: [] as import("./types").Register[],
+      pin_reset_requests: db.pinResetRequests,
     };
     const rows = map[sheet] as unknown[];
-    const idKey = sheet === "preview_tokens" ? "token" : (sheet === "user_pins" || sheet === "register") ? "phone" : "id";
+    const idKey = sheet === "preview_tokens" ? "token" : "id";
     const index = rows.findIndex((row) => String((row as Record<string, unknown>)[idKey]) === id);
     if (index >= 0) rows.splice(index, 1);
     return true;
   }
   const rows = await listSheet(sheet);
-  const idKey = sheet === "preview_tokens" ? "token" : (sheet === "user_pins" || sheet === "register") ? "phone" : "id";
+  const idKey = sheet === "preview_tokens" ? "token" : "id";
   const index = rows.findIndex((row) => String((row as Record<string, unknown>)[idKey]) === id);
   if (index < 0) return false;
   await sheetsRequest(valuesPath(`${sheet}!A${index + 2}:Z${index + 2}`, ":clear"), {

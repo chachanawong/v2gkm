@@ -1,11 +1,12 @@
 import { AdminResourceManager } from "@/components/admin/AdminResourceManager";
 import { AdminShell } from "@/components/shared/AdminShell";
+import { getCategoryOptionNames } from "@/lib/category-settings";
 import { batchListSheets } from "@/lib/google-sheets";
 import type { Category, Profile } from "@/lib/types";
 
 export default async function AdminProfilesPage() {
   const data = await batchListSheets(["profiles", "categories"]) as { profiles: Profile[]; categories: Category[] };
-  const categoryOptions = data.categories.filter((item) => item.active !== false).map((item) => item.name);
+  const categoryOptions = getCategoryOptionNames(data.categories, "profiles");
   return (
     <AdminShell allowed={["Admin", "Content"]}>
       <AdminResourceManager

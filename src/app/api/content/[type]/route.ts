@@ -6,7 +6,11 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params;
-  const session = verifyToken(getBearerToken(request));
+  const bearerToken = getBearerToken(request);
+  const session = verifyToken(bearerToken);
+  if (bearerToken && !session) {
+    return Response.json({ error: "Invalid user session" }, { status: 401 });
+  }
   const membership = session?.kind === "user" ? session.membership : "general";
   const data = await getUserContent(membership);
   if (type === "all") {

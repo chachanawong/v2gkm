@@ -1,6 +1,8 @@
 import { assertAdminRequest, getAdminSession, normalizeAdminRole } from "@/lib/auth";
+import { normalizeCategoryType } from "@/lib/category-settings";
 import { deleteResource, listResource, upsertResource } from "@/lib/google-sheets";
 import { writeAuditLog } from "@/lib/audit";
+import { normalizeDateOnly } from "@/lib/normalize";
 import { applyPublishWindow, computeContentStatus, validatePublishWindow } from "@/lib/publish";
 import type { ResourceType } from "@/lib/types";
 import { getYouTubeId, getYouTubeThumbnail } from "@/lib/youtube";
@@ -79,7 +81,10 @@ async function normalizeAdminPayload(resource: ResourceType, item: Record<string
     next.youtubeId = String(next.youtubeId || getYouTubeId(youtubeUrl));
     next.thumbnail = next.thumbnail || getYouTubeThumbnail(youtubeUrl);
     next.viewCount = Number(next.viewCount ?? 0);
-    next.uploadDate = String(next.uploadDate || now.slice(0, 10));
+    next.uploadDate = normalizeDateOnly(next.uploadDate || now);
+  }
+  if (resource === "news") {
+    next.pinned = next.pinned === true || next.pinned === "true" || next.pinned === "on";
   }
   if (resource === "admins") {
     next.role = normalizeAdminRole(next.role);
@@ -87,6 +92,7 @@ async function normalizeAdminPayload(resource: ResourceType, item: Record<string
   if (resource === "categories") {
     next.name = String(next.name ?? "").trim();
     next.active = next.active !== false;
+    next.type = normalizeCategoryType(next.type);
   }
   if (resource === "users" || resource === "admins") {
     if (role !== "Admin") delete next.active;

@@ -45,9 +45,16 @@ export default function ProfilesPage() {
             <ContentCard
               title={item.name}
               image={getPrimaryImage(item)}
-              imageAspect="3/4"
-              imageFit="contain"
-              meta={<><VisibilityBadge value={item.pin || item.visibility} /><span>{item.position}</span></>}
+              imageAspect="1/1"
+              imageFit="cover"
+              meta={(
+                <div className="knowledge-card-meta">
+                  <div className="knowledge-card-meta-tags">
+                    {item.pin ? <VisibilityBadge value={item.pin} /> : null}
+                  </div>
+                  <span className="knowledge-card-date">{item.position}</span>
+                </div>
+              )}
             >
               <p className="line-clamp">{item.bio}</p>
               <span className="muted-link">View Profile</span>
@@ -58,7 +65,13 @@ export default function ProfilesPage() {
       <Modal open={Boolean(selected)} title={selected?.name ?? "Profile"} onClose={() => setSelected(null)}>
         {selected ? (
           <div className="knowledge-preview profile-preview">
-            <div className="card-meta"><VisibilityBadge value={selected.visibility} /><span>{selected.position}</span></div>
+            <div className="knowledge-card-meta">
+              <div className="knowledge-card-meta-tags">
+                {selected.pin ? <VisibilityBadge value={selected.pin} /> : null}
+                <VisibilityBadge value={selected.visibility} />
+              </div>
+              <span className="knowledge-card-date">{selected.position}</span>
+            </div>
             <p className="multiline">{selected.bio}</p>
             <div className="gallery-grid">
               {normalizeImages(selected.images).map((image, index) => (

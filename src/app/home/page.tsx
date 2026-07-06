@@ -4,18 +4,19 @@ import { ExternalLink, LayoutGrid, LayoutList } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/shared/AppShell";
+import { CalendarWidget } from "@/components/shared/CalendarWidget";
 import { ContentCard, VisibilityBadge } from "@/components/shared/ContentCard";
 import { HighlightBanner } from "@/components/shared/HighlightBanner";
 import { ImageCarousel } from "@/components/shared/ImageCarousel";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { getCategoryOptionNames } from "@/lib/category-settings";
+import { getCategoryOptionNames, resolveCategoryTypes } from "@/lib/category-settings";
 import { useStoredMembership } from "@/lib/client-session";
 import { getPrimaryImage, normalizeCategories, normalizeImageUrl, normalizeImages } from "@/lib/normalize";
-import { toThaiCategory } from "@/lib/categoryTh";
 import { useContentBundle } from "@/lib/useContent";
 import { useLocalStorageSet } from "@/lib/useLocalStorage";
-import type { Knowledge, News, Profile } from "@/lib/types";
+import type { Category, Knowledge, News, Profile } from "@/lib/types";
 
 const NEW_BADGE_DAYS = 7;
 function isNew(news: News) {
@@ -108,6 +109,7 @@ export default function HomePage() {
 
   const highlights = useMemo(() => {
     return [...data.news]
+      .filter((item) => item.pinned === true)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 5)
       .map((item) => ({
@@ -145,40 +147,50 @@ export default function HomePage() {
         </div>
       </section>
 
-      {!loading && highlights.length ? <HighlightBanner slides={highlights} /> : null}
-
-      {/* Section tab buttons */}
       {!loading ? (
-        <div className="section-tabs">
-          {TAB_DEFS.map(({ tab, label }) => {
-            const img = normalizeImageUrl(tabImages[tab]);
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                className={isActive ? "section-tab active" : "section-tab"}
-                onClick={() => setActiveTab(tab)}
-                aria-pressed={isActive}
-              >
-                {img ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={img} alt={label} />
-                ) : null}
-                <div className="section-tab-overlay" />
-                <div className="section-tab-content">
-                  <span className="section-tab-label">
-                    {label}
-                    {tab === "news" && unreadCount > 0 ? (
-                      <span style={{ marginLeft: 6, background: "var(--error)", color: "#fff", borderRadius: 10, fontSize: 9, fontWeight: 700, padding: "1px 5px" }}>{unreadCount}</span>
-                    ) : null}
-                  </span>
-                  <span className="section-tab-count">{tabCounts[tab]} รายการ</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <section className="home-hero">
+          {highlights.length ? (
+            <div className="home-hero-highlight">
+              <HighlightBanner slides={highlights} />
+            </div>
+          ) : null}
+
+          <div className="home-hero-tabs">
+            {TAB_DEFS.map(({ tab, label, eyebrow }) => {
+              const img = normalizeImageUrl(tabImages[tab]);
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  className={isActive ? "section-tab active" : "section-tab"}
+                  onClick={() => setActiveTab(tab)}
+                  aria-pressed={isActive}
+                >
+                  {img ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={img} alt={label} />
+                  ) : null}
+                  <div className="section-tab-overlay" />
+                  <div className="section-tab-content">
+                    <span className="section-tab-eyebrow">{eyebrow}</span>
+                    <span className="section-tab-label">
+                      {label}
+                      {tab === "news" && unreadCount > 0 ? (
+                        <span style={{ marginLeft: 6, background: "var(--error)", color: "#fff", borderRadius: 10, fontSize: 9, fontWeight: 700, padding: "1px 5px" }}>{unreadCount}</span>
+                      ) : null}
+                    </span>
+                    <span className="section-tab-count">{tabCounts[tab]} รายการ</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="home-hero-calendar">
+            <CalendarWidget variant="panel" />
+          </div>
+        </section>
       ) : null}
 
       {/* Active section heading + tools */}
@@ -239,7 +251,7 @@ export default function HomePage() {
             const event = parseNewsEvent(item);
             return (
               <button className="card-button" type="button" onClick={() => { readNews.mark(item.id); setSelected({ type: "news", item }); }} key={item.id}>
-                <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} />{isNew(item) ? <span style={{ color: "var(--success)", fontSize: 10, fontWeight: 700 }}>NEW</span> : null}{!readNews.has(item.id) ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", display: "inline-block" }} /> : null}</>} imageTags={normalizeCategories(item.categories).map(toThaiCategory)}>
+                <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="news" />{isNew(item) ? <span style={{ color: "var(--success)", fontSize: 10, fontWeight: 700 }}>NEW</span> : null}{!readNews.has(item.id) ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", display: "inline-block" }} /> : null}</>}>
                   {event.date || event.time || event.channel ? (
                     <div className="news-event-info">
                       {event.date ? <span>📅 {event.date}</span> : null}
@@ -260,7 +272,19 @@ export default function HomePage() {
         <HomeSection viewMode={viewMode}>
           {knowledge.map((item) => (
             <button className="card-button" type="button" onClick={() => setSelected({ type: "knowledge", item })} key={item.id}>
-              <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<span>{item.uploadDate}</span>} imageTags={normalizeCategories(item.categories).map(toThaiCategory)} imageAspect="16/9" />
+              <ContentCard
+                title={item.title}
+                image={getPrimaryImage(item)}
+                meta={(
+                  <div className="knowledge-card-meta">
+                    <div className="knowledge-card-meta-tags">
+                      <MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="knowledge" />
+                    </div>
+                    <span className="knowledge-card-date">{item.uploadDate}</span>
+                  </div>
+                )}
+                imageAspect="16/9"
+              />
             </button>
           ))}
         </HomeSection>
@@ -273,9 +297,17 @@ export default function HomePage() {
               <ContentCard
                 title={item.name}
                 image={getPrimaryImage(item)}
-                imageAspect="3/4"
-                imageFit="contain"
-                meta={<><VisibilityBadge value={item.pin || item.visibility} /><span>{item.position}</span></>}
+                imageAspect="1/1"
+                imageFit="cover"
+                meta={(
+                  <div className="knowledge-card-meta">
+                    <div className="knowledge-card-meta-tags">
+                      <MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="profiles" />
+                      {item.pin ? <VisibilityBadge value={item.pin} /> : null}
+                    </div>
+                    <span className="knowledge-card-date">{item.position}</span>
+                  </div>
+                )}
               >
                 <p className="line-clamp multiline">{item.bio}</p>
                 <span className="muted-link">View Profile</span>
@@ -287,7 +319,7 @@ export default function HomePage() {
 
       {/* Detail modal */}
       <Modal open={Boolean(selected)} title={selectedTitle(selected)} onClose={() => setSelected(null)}>
-        {selected ? <SelectedDetail selected={selected} /> : null}
+        {selected ? <SelectedDetail selected={selected} masterCategories={data.categories} /> : null}
       </Modal>
 
       {/* View-more list modal */}
@@ -295,7 +327,7 @@ export default function HomePage() {
         {listModal === "news" ? (
           <CategoryList items={news} renderItem={(item) => (
             <button className="card-button" type="button" onClick={() => { setListModal(null); setSelected({ type: "news", item }); }} key={item.id}>
-              <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<VisibilityBadge value={item.visibility} />}>
+              <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="news" />}>
                 <p className="line-clamp multiline">{item.body}</p>
               </ContentCard>
             </button>
@@ -304,7 +336,19 @@ export default function HomePage() {
         {listModal === "knowledge" ? (
           <CategoryList items={knowledge} renderItem={(item) => (
             <button className="card-button" type="button" onClick={() => { setListModal(null); setSelected({ type: "knowledge", item }); }} key={item.id}>
-              <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span></>}>
+              <ContentCard
+                title={item.title}
+                image={getPrimaryImage(item)}
+                meta={(
+                  <div className="knowledge-card-meta">
+                    <div className="knowledge-card-meta-tags">
+                      <MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="knowledge" />
+                      <VisibilityBadge value={item.visibility} />
+                    </div>
+                    <span className="knowledge-card-date">{item.uploadDate}</span>
+                  </div>
+                )}
+              >
                 <p className="line-clamp two-line">{item.youtubeUrl}</p>
               </ContentCard>
             </button>
@@ -316,9 +360,17 @@ export default function HomePage() {
               <ContentCard
                 title={item.name}
                 image={getPrimaryImage(item)}
-                imageAspect="3/4"
-                imageFit="contain"
-                meta={<><VisibilityBadge value={item.pin || item.visibility} /><span>{item.position}</span></>}
+                imageAspect="1/1"
+                imageFit="cover"
+                meta={(
+                  <div className="knowledge-card-meta">
+                    <div className="knowledge-card-meta-tags">
+                      <MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="profiles" />
+                      {item.pin ? <VisibilityBadge value={item.pin} /> : null}
+                    </div>
+                    <span className="knowledge-card-date">{item.position}</span>
+                  </div>
+                )}
               >
                 <p className="line-clamp multiline">{item.bio}</p>
               </ContentCard>
@@ -342,14 +394,14 @@ function selectedTitle(selected: SelectedItem | null) {
   return selected.item.title;
 }
 
-function SelectedDetail({ selected }: { selected: SelectedItem }) {
+function SelectedDetail({ selected, masterCategories }: { selected: SelectedItem; masterCategories: Category[] }) {
   if (selected.type === "news") {
     const item = selected.item;
     const event = parseNewsEvent(item);
     return (
       <div className="knowledge-preview">
         <ImageCarousel images={normalizeImages(item.images)} title={item.title} />
-        <div className="card-meta"><VisibilityBadge value={item.visibility} /></div>
+        <div className="card-meta"><MasterCategoryPills categories={masterCategories} itemCategories={item.categories} type="news" /></div>
         {event.date || event.time || event.channel ? (
           <div className="news-event-info" style={{ margin: "6px 0" }}>
             {event.date ? <span>📅 {event.date}</span> : null}
@@ -366,7 +418,13 @@ function SelectedDetail({ selected }: { selected: SelectedItem }) {
     const item = selected.item;
     return (
       <div className="knowledge-preview profile-preview">
-        <div className="card-meta"><VisibilityBadge value={item.visibility} /><span>{item.position}</span></div>
+        <div className="knowledge-card-meta">
+          <div className="knowledge-card-meta-tags">
+            <MasterCategoryPills categories={masterCategories} itemCategories={item.categories} type="profiles" />
+            {item.pin ? <VisibilityBadge value={item.pin} /> : null}
+          </div>
+          <span className="knowledge-card-date">{item.position}</span>
+        </div>
         <p className="multiline">{item.bio}</p>
         <ImageGrid images={normalizeImages(item.images)} title={item.name} />
       </div>
@@ -515,6 +573,49 @@ function groupByCategory<T extends { id: string; categories?: string[] }>(items:
   return [...map.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, rows]) => ({ name, items: rows }));
+}
+
+function MasterCategoryPills({
+  categories,
+  itemCategories,
+  type,
+}: {
+  categories: Category[];
+  itemCategories?: string[];
+  type: "news" | "knowledge" | "profiles";
+}) {
+  const names = getMasterCategoryNames(categories, itemCategories, type);
+  if (!names.length) return null;
+  return (
+    <>
+      {names.map((name) => (
+        <Badge key={name} tone="dark">{name}</Badge>
+      ))}
+    </>
+  );
+}
+
+function getMasterCategoryNames(categories: Category[], itemCategories: string[] | undefined, type: "news" | "knowledge" | "profiles") {
+  const normalized = normalizeCategories(itemCategories);
+  if (!normalized.length) return [];
+
+  const masterByKey = new Map(
+    categories
+      .filter((category) => category.active !== false)
+      .filter((category) => resolveCategoryTypes(category).includes(type))
+      .map((category) => [category.name.trim().toLowerCase(), category.name.trim()] as const),
+  );
+
+  const seen = new Set<string>();
+  return normalized
+    .map((name) => masterByKey.get(name.trim().toLowerCase()) ?? "")
+    .filter((name) => {
+      if (!name) return false;
+      const key = name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 function resolveSelectedCategory(selected: string, options: string[]) {

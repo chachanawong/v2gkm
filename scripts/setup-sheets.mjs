@@ -26,7 +26,7 @@ const headers = {
   ],
   profiles: ["id", "pin", "name", "bio", "position", "visibility", "images", "status", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories"],
   news: ["id", "title", "body", "eventDate", "eventTime", "eventChannel", "images", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories", "pinned"],
-  categories: ["id", "name", "active"],
+  categories: ["id", "name", "active", "type"],
   events: ["id", "title", "description", "eventType", "startDate", "endDate", "location", "capacity", "images", "visibility", "status", "pinned", "createdAt", "updatedAt"],
   event_registrations: ["id", "eventId", "userId", "userName", "userPhone", "status", "createdAt"],
   learning_paths: ["id", "title", "description", "thumbnail", "visibility", "status", "order", "createdAt", "updatedAt"],
@@ -34,17 +34,18 @@ const headers = {
   user_progress: ["id", "userId", "lessonId", "pathId", "completed", "quizScore", "completedAt"],
   audit_logs: ["id", "actor", "role", "action", "resource", "at"],
   preview_tokens: ["token", "resourceType", "resourceId", "expiresAt", "data"],
-  bo_members: ["id", "createdAt", "date", "time", "name", "nickname", "upline", "phone", "memberType", "loginpin", "memberpin", "status"],
+  pin_reset_requests: ["id", "phone", "userId", "userName", "status", "requestedAt", "resolvedAt", "resolvedBy", "note"],
+  bo_members: ["id", "createdAt", "date", "time", "name", "nickname", "upline", "phone", "memberType", "loginpin", "loginpin_hash", "memberpin", "status"],
 };
 
 const now = new Date().toISOString();
 const seedRows = {
   admins: [["a-001", "Admin V2G", "admin@v2g.local", "Admin", "admin1234", true]],
   categories: [
-    ["c-001", "Business", "true"],
-    ["c-002", "Mindset", "true"],
-    ["c-003", "Training", "true"],
-    ["c-004", "Leadership", "true"],
+    ["c-001", "Business", "true", ""],
+    ["c-002", "Mindset", "true", ""],
+    ["c-003", "Training", "true", ""],
+    ["c-004", "Leadership", "true", ""],
   ],
   knowledge: [
     [
@@ -134,6 +135,7 @@ const seedRows = {
   audit_logs: [["log-001", "system", "system", "setup sheets", "all", now]],
   preview_tokens: [["demo-preview-token", "news", "n-001", "2030-01-01T00:00:00.000Z", ""]],
   bo_members: [],
+  pin_reset_requests: [],
 };
 
 function requireEnv(name) {

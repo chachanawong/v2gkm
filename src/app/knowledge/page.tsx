@@ -7,6 +7,7 @@ import { ContentCard, VisibilityBadge } from "@/components/shared/ContentCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { getCategoryOptionNames } from "@/lib/category-settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getStoredMembership, useStoredMembership } from "@/lib/client-session";
 import { useLocalStorageList, useLocalStorageSet } from "@/lib/useLocalStorage";
@@ -26,6 +27,10 @@ export default function KnowledgePage() {
   const recent = useLocalStorageList<Knowledge & { id: string }>("v2g_knowledge_recent", 10);
   const { items, loading } = useContent<Knowledge>("knowledge", membership);
   const { items: categories } = useContent<Category>("categories", membership);
+  const categoryOptions = useMemo(
+    () => getCategoryOptionNames(categories, "knowledge"),
+    [categories],
+  );
 
   const filtered = useMemo(() => {
     let base = [...items];
@@ -68,7 +73,7 @@ export default function KnowledgePage() {
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ค้นหา..." />
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="all">ทุกหมวด</option>
-          {categories.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
+          {categoryOptions.map((name) => <option key={name} value={name}>{name}</option>)}
         </select>
         {tab !== "recent" ? (
           <select value={sort} onChange={(e) => setSort(e.target.value)}>

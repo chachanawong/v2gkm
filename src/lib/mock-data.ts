@@ -1,4 +1,4 @@
-import type { Admin, AuditLog, Category, Event, EventRegistration, Knowledge, Lesson, LearningPath, News, PreviewToken, Profile, User, UserPin, UserProgress } from "./types";
+import type { Admin, AuditLog, Category, Event, EventRegistration, Knowledge, Lesson, LearningPath, News, PinResetRequest, PreviewToken, Profile, User, UserProgress } from "./types";
 
 const now = new Date().toISOString();
 
@@ -345,6 +345,6 @@ export const previewTokens: PreviewToken[] = [
   },
 ];
 
-export const userPins: UserPin[] = [];
+export const pinResetRequests: PinResetRequest[] = [];
 
-export const db = { users, admins, categories, knowledge, news, profiles, events, eventRegistrations, learningPaths, lessons, userProgress, auditLogs, previewTokens, userPins };
+export const db = { users, admins, categories, knowledge, news, profiles, events, eventRegistrations, learningPaths, lessons, userProgress, auditLogs, previewTokens, pinResetRequests };

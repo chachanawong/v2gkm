@@ -40,6 +40,7 @@ export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: 
       {!admin ? (
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: "auto" }}>
           <CalendarWidget />
+          {user ? <MembershipExpiryBadge /> : null}
 {user ? <MemberSummary user={user} /> : null}
           <button className="topbar-logout" type="button" onClick={logout}>Logout</button>
         </div>
@@ -51,6 +52,76 @@ export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: 
         </details>
       ) : null}
     </header>
+  );
+}
+
+function MembershipExpiryBadge() {
+  const [state, setState] = useState<{
+    loading: boolean;
+    daysRemaining: number | null;
+    latestPaymentDate?: string | null;
+  }>({
+    loading: true,
+    daysRemaining: null,
+    latestPaymentDate: null,
+  });
+
+  useEffect(() => {
+    const token = getUserToken();
+    if (!token) {
+      setState({ loading: false, daysRemaining: null, latestPaymentDate: null });
+      return;
+    }
+
+    let active = true;
+    fetch("/api/user/membership-status", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data: { daysRemaining?: number | null; latestPaymentDate?: string | null } | null) => {
+        if (!active) return;
+        setState({
+          loading: false,
+          daysRemaining: typeof data?.daysRemaining === "number" ? data.daysRemaining : null,
+          latestPaymentDate: data?.latestPaymentDate ?? null,
+        });
+      })
+      .catch(() => {
+        if (active) {
+          setState({ loading: false, daysRemaining: null, latestPaymentDate: null });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (state.loading) {
+    return <span className="membership-expiry-badge">กำลังเช็กสมาชิก</span>;
+  }
+
+  if (state.daysRemaining === null) {
+    return (
+      <span
+        className="membership-expiry-badge"
+        title={state.latestPaymentDate ? `Payment ล่าสุด ${state.latestPaymentDate}` : "ไม่พบ Payment Date"}
+      >
+        สมาชิก
+      </span>
+    );
+  }
+
+  const toneClass = state.daysRemaining < 7 ? "is-critical" : state.daysRemaining <= 10 ? "is-warning" : "";
+  const label = state.daysRemaining < 0 ? `หมดอายุ ${Math.abs(state.daysRemaining)} วัน` : `เหลือ ${state.daysRemaining} วัน`;
+
+  return (
+    <span
+      className={`membership-expiry-badge ${toneClass}`.trim()}
+      title={state.latestPaymentDate ? `Payment ล่าสุด ${state.latestPaymentDate}` : undefined}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -164,8 +235,6 @@ function TierPill({ tier }: { tier: string }) {
 function AdminMenuContent({ role, logout }: { role: AdminRole; logout: () => void }) {
   const isAdmin = role === "Admin";
   const canContent = canAccessResource(role, "knowledge") || canAccessResource(role, "news") || canAccessResource(role, "profiles") || canAccessResource(role, "categories");
-  const canEvents = canAccessResource(role, "events");
-  const canLearning = canAccessResource(role, "learning_paths");
   const canAccount = canAccessResource(role, "users") || canAccessResource(role, "account");
   return (
     <nav className="nav admin-nav" aria-label="Admin navigation">
@@ -176,14 +245,7 @@ function AdminMenuContent({ role, logout }: { role: AdminRole; logout: () => voi
           {canAccessResource(role, "knowledge") ? <Link href="/admin/knowledge">Knowledge</Link> : null}
           {canAccessResource(role, "news") ? <Link href="/admin/news">News</Link> : null}
           {canAccessResource(role, "profiles") ? <Link href="/admin/profiles">Profiles</Link> : null}
-          {canAccessResource(role, "categories") ? <Link href="/admin/categories">Categories</Link> : null}
-        </div>
-      ) : null}
-      {canEvents || canLearning ? (
-        <div className="nav-group">
-          <span>Programs</span>
-          {canEvents ? <Link href="/admin/events">Events</Link> : null}
-          {canLearning ? <Link href="/admin/learning">Learning</Link> : null}
+          {canAccessResource(role, "categories") ? <Link href="/admin/master-settings">Master Settings</Link> : null}
         </div>
       ) : null}
       {canAccount ? (
@@ -195,7 +257,6 @@ function AdminMenuContent({ role, logout }: { role: AdminRole; logout: () => voi
         </div>
       ) : null}
       {canAccount ? <a href="https://v2gcenter.up.railway.app" target="_blank" rel="noreferrer">Account System</a> : null}
-      {isAdmin ? <Link href="/styleguide" target="_blank" rel="noreferrer">Styleguide</Link> : null}
       <Link href="/home">User Home</Link>
       <button type="button" onClick={logout}>Logout</button>
     </nav>

@@ -1,11 +1,12 @@
 import { AdminResourceManager } from "@/components/admin/AdminResourceManager";
 import { AdminShell } from "@/components/shared/AdminShell";
+import { getCategoryOptionNames } from "@/lib/category-settings";
 import { batchListSheets } from "@/lib/google-sheets";
 import type { Category, Knowledge } from "@/lib/types";
 
 export default async function AdminKnowledgePage() {
   const data = await batchListSheets(["knowledge", "categories"]) as { knowledge: Knowledge[]; categories: Category[] };
-  const categoryOptions = data.categories.filter((item) => item.active !== false).map((item) => item.name);
+  const categoryOptions = getCategoryOptionNames(data.categories, "knowledge");
   return (
     <AdminShell allowed={["Admin", "Content"]}>
       <AdminResourceManager

@@ -26,16 +26,17 @@ export default function LoginPage() {
   const [showPin, setShowPin] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   function reset() {
-    setPin(""); setConfirmPin(""); setError(""); setShowPin(false); setShowConfirm(false);
+    setPin(""); setConfirmPin(""); setError(""); setNotice(""); setShowPin(false); setShowConfirm(false);
   }
 
   async function handlePhoneSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setNotice("");
     const res = await fetch("/api/auth/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -54,7 +55,7 @@ export default function LoginPage() {
   async function handleEnterPin(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setNotice("");
     const res = await fetch("/api/auth/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -78,7 +79,7 @@ export default function LoginPage() {
     if (loading) return;
     if (pin !== confirmPin) { setError("PIN ทั้งสองไม่ตรงกัน"); return; }
     if (!/^\d{4,6}$/.test(pin)) { setError("PIN ต้องเป็นตัวเลข 4-6 หลัก"); return; }
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setNotice("");
     const res = await fetch("/api/auth/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -95,6 +96,23 @@ export default function LoginPage() {
     localStorage.setItem("v2g_user_token", data.token);
     window.dispatchEvent(new Event("v2g-session"));
     location.href = "/home";
+  }
+
+  async function handleRequestReset() {
+    if (loading) return;
+    setLoading(true); setError(""); setNotice("");
+    const res = await fetch("/api/auth/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, requestReset: true }),
+    });
+    const data = await readJsonSafe<{ success?: boolean; message?: string; error?: string }>(res);
+    setLoading(false);
+    if (!res.ok) {
+      setError(data?.error ?? "ส่งคำขอรีเซ็ต PIN ไม่สำเร็จ");
+      return;
+    }
+    setNotice(data?.message ?? "ส่งคำขอรีเซ็ต PIN ไปยัง Admin แล้ว");
   }
 
   return (
@@ -168,9 +186,13 @@ export default function LoginPage() {
                   </div>
                 </label>
                 {error ? <p className="form-error">{error}</p> : null}
+                {notice ? <p className="form-notice">{notice}</p> : null}
                 <Button type="submit" disabled={loading} icon={loading ? <Loader2 size={14} className="spin-icon" /> : undefined}>
                   {loading ? "กำลังตรวจสอบ..." : "เข้าสู่ระบบ"}
                 </Button>
+                <button type="button" className="link-btn" onClick={handleRequestReset}>
+                  ลืม PIN
+                </button>
                 <button type="button" className="link-btn" onClick={() => { setStep("phone"); reset(); }}>
                   ← เปลี่ยนเบอร์โทรศัพท์
                 </button>
@@ -222,6 +244,7 @@ export default function LoginPage() {
                   </div>
                 </label>
                 {error ? <p className="form-error">{error}</p> : null}
+                {notice ? <p className="form-notice">{notice}</p> : null}
                 <Button type="submit" disabled={loading} icon={loading ? <Loader2 size={14} className="spin-icon" /> : undefined}>
                   {loading ? "กำลังบันทึก..." : "บันทึก PIN และเข้าสู่ระบบ"}
                 </Button>

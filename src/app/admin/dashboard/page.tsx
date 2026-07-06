@@ -1,8 +1,9 @@
 import { AdminShell } from "@/components/shared/AdminShell";
+import { PinResetRequestsPanel } from "@/components/admin/PinResetRequestsPanel";
 import { Badge } from "@/components/ui/Badge";
 import { batchListSheets } from "@/lib/google-sheets";
 import { listBoUsers } from "@/lib/bo-members";
-import type { AuditLog, Knowledge, News, Profile, User } from "@/lib/types";
+import type { AuditLog, Knowledge, News, PinResetRequest, Profile, User } from "@/lib/types";
 
 export default async function AdminDashboardPage() {
   const data = await loadDashboardData();
@@ -28,6 +29,7 @@ export default async function AdminDashboardPage() {
           <Metric label="Profiles" value={data.profiles.length} />
         </div>
         <div className="dashboard-grid">
+          <PinResetRequestsPanel requests={data.pin_reset_requests} />
           <section className="panel">
             <div className="panel-head">
               <div>
@@ -79,10 +81,11 @@ async function loadDashboardData(): Promise<{
   news: News[];
   profiles: Profile[];
   audit_logs: AuditLog[];
+  pin_reset_requests: PinResetRequest[];
 }> {
   try {
     const [content, users] = await Promise.all([
-      batchListSheets(["knowledge", "news", "profiles", "audit_logs"]),
+      batchListSheets(["knowledge", "news", "profiles", "audit_logs", "pin_reset_requests"]),
       listBoUsers(),
     ]);
     return {
@@ -91,10 +94,13 @@ async function loadDashboardData(): Promise<{
       news: content.news as News[],
       profiles: content.profiles as Profile[],
       audit_logs: content.audit_logs as AuditLog[],
+      pin_reset_requests: (content.pin_reset_requests as PinResetRequest[])
+        .filter((item) => item.status === "pending")
+        .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt)),
     };
   } catch (error) {
     console.error("[admin-dashboard] failed to load dashboard data", error);
-    return { users: [], knowledge: [], news: [], profiles: [], audit_logs: [] };
+    return { users: [], knowledge: [], news: [], profiles: [], audit_logs: [], pin_reset_requests: [] };
   }
 }
 

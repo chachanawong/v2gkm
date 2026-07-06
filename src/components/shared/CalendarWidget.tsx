@@ -30,8 +30,9 @@ function formatShortDate(iso: string) {
   return new Date(iso).toLocaleDateString("th-TH", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-export function CalendarWidget() {
-  const [open, setOpen] = useState(false);
+export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | "panel" }) {
+  const isPanel = variant === "panel";
+  const [open, setOpen] = useState(isPanel);
   const [month, setMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -47,18 +48,17 @@ export function CalendarWidget() {
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d.items)) setEvents(d.items as Event[]); })
       .catch(() => undefined);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [membership]);
 
   // Close on outside click
   useEffect(() => {
-    if (!open) return;
+    if (!open || isPanel) return;
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  }, [isPanel, open]);
 
   const year = month.getFullYear();
   const monthIdx = month.getMonth();
@@ -91,38 +91,45 @@ export function CalendarWidget() {
   }
 
   return (
-    <div className="cal-widget" ref={ref}>
-      <button
-        type="button"
-        className={open ? "cal-btn active" : "cal-btn"}
-        onClick={() => setOpen((v) => !v)}
-        aria-label="ปฏิทินกิจกรรม"
-        style={{ position: "relative" }}
-      >
-        <CalendarDays size={18} />
-        {upcomingCount > 0 ? (
-          <span style={{
-            position: "absolute", top: -4, right: -4,
-            background: "var(--error)", color: "#fff",
-            borderRadius: 10, fontSize: 8, fontWeight: 700,
-            padding: "1px 4px", lineHeight: 1.5, pointerEvents: "none",
-          }}>{upcomingCount}</span>
-        ) : null}
-      </button>
+    <div className={isPanel ? "cal-widget cal-widget-panel" : "cal-widget"} ref={ref}>
+      {!isPanel ? (
+        <button
+          type="button"
+          className={open ? "cal-btn active" : "cal-btn"}
+          onClick={() => setOpen((v) => !v)}
+          aria-label="ปฏิทินกิจกรรม"
+          style={{ position: "relative" }}
+        >
+          <CalendarDays size={18} />
+          {upcomingCount > 0 ? (
+            <span style={{
+              position: "absolute", top: -4, right: -4,
+              background: "var(--error)", color: "#fff",
+              borderRadius: 10, fontSize: 8, fontWeight: 700,
+              padding: "1px 4px", lineHeight: 1.5, pointerEvents: "none",
+            }}>{upcomingCount}</span>
+          ) : null}
+        </button>
+      ) : null}
 
       {open ? (
-        <div className="cal-popup">
+        <div className={isPanel ? "cal-popup cal-popup-panel" : "cal-popup"}>
           <div className="cal-header">
+            <div className="cal-header-title">
+              <span className="cal-header-kicker">Calendar</span>
+              <span className="cal-month-label">{MONTHS_TH[monthIdx]} {year}</span>
+            </div>
             <button type="button" className="cal-nav" onClick={() => setMonth(new Date(year, monthIdx - 1, 1))}>
               <ChevronLeft size={14} />
             </button>
-            <span className="cal-month-label">{MONTHS_TH[monthIdx]} {year}</span>
             <button type="button" className="cal-nav" onClick={() => setMonth(new Date(year, monthIdx + 1, 1))}>
               <ChevronRight size={14} />
             </button>
-            <button type="button" className="cal-close" onClick={() => setOpen(false)}>
-              <X size={14} />
-            </button>
+            {!isPanel ? (
+              <button type="button" className="cal-close" onClick={() => setOpen(false)}>
+                <X size={14} />
+              </button>
+            ) : null}
           </div>
 
           <div className="cal-grid">
@@ -155,7 +162,10 @@ export function CalendarWidget() {
 
           {monthEvents.length > 0 ? (
             <div className="cal-events">
-              <p className="cal-events-label">กิจกรรมในเดือนนี้</p>
+              <div className="cal-events-head">
+                <p className="cal-events-label">กิจกรรมในเดือนนี้</p>
+                <span className="cal-upcoming-count">{upcomingCount} upcoming</span>
+              </div>
               {monthEvents.map((ev) => (
                 <div className="cal-event-row" key={ev.id}>
                   <span
@@ -185,6 +195,10 @@ export function CalendarWidget() {
             </div>
           ) : (
             <div className="cal-events">
+              <div className="cal-events-head">
+                <p className="cal-events-label">กิจกรรมในเดือนนี้</p>
+                <span className="cal-upcoming-count">{upcomingCount} upcoming</span>
+              </div>
               <p style={{ fontSize: 11, color: "var(--secondary)", textAlign: "center", padding: "8px 0" }}>ไม่มีกิจกรรมในเดือนนี้</p>
             </div>
           )}
