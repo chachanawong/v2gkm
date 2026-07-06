@@ -39,6 +39,12 @@ const TAB_DEFS: { tab: ActiveTab; label: string; eyebrow: string }[] = [
   { tab: "profiles",  label: "ประวัติคนสำเร็จ", eyebrow: "People" },
 ];
 
+const TAB_BACKGROUNDS: Record<ActiveTab, string> = {
+  news: "/images/home-tabs/news.png",
+  knowledge: "/images/home-tabs/learning.png",
+  profiles: "/images/home-tabs/people.png",
+};
+
 export default function HomePage() {
   const membership = useStoredMembership();
   const [query, setQuery] = useState("");
@@ -123,12 +129,6 @@ export default function HomePage() {
 
   const unreadCount = useMemo(() => news.filter((n) => !readNews.has(n.id)).length, [news, readNews]);
   const tabCounts = { news: allNews.length, knowledge: allKnowledge.length, profiles: allProfiles.length };
-  const tabImages = useMemo(() => ({
-    news:      getFirstAvailableImage(allNews),
-    knowledge: getFirstAvailableImage(allKnowledge),
-    profiles:  getFirstAvailableImage(allProfiles),
-  }), [allKnowledge, allNews, allProfiles]);
-
   return (
     <AppShell>
       {showOverlay ? (
@@ -157,7 +157,7 @@ export default function HomePage() {
 
           <div className="home-hero-tabs">
             {TAB_DEFS.map(({ tab, label, eyebrow }) => {
-              const img = normalizeImageUrl(tabImages[tab]);
+              const img = TAB_BACKGROUNDS[tab];
               const isActive = activeTab === tab;
               return (
                 <button
@@ -167,10 +167,8 @@ export default function HomePage() {
                   onClick={() => setActiveTab(tab)}
                   aria-pressed={isActive}
                 >
-                  {img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img} alt={label} />
-                  ) : null}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt={label} />
                   <div className="section-tab-overlay" />
                   <div className="section-tab-content">
                     <span className="section-tab-eyebrow">{eyebrow}</span>
@@ -247,7 +245,7 @@ export default function HomePage() {
       {/* Active tab content */}
       {activeTab === "news" ? (
         <HomeSection viewMode={viewMode}>
-          {news.map((item) => {
+          {news.length ? news.map((item) => {
             const event = parseNewsEvent(item);
             return (
               <button className="card-button" type="button" onClick={() => { readNews.mark(item.id); setSelected({ type: "news", item }); }} key={item.id}>
@@ -264,13 +262,13 @@ export default function HomePage() {
                 </ContentCard>
               </button>
             );
-          })}
+          }) : <EmptyState />}
         </HomeSection>
       ) : null}
 
       {activeTab === "knowledge" ? (
         <HomeSection viewMode={viewMode}>
-          {knowledge.map((item) => (
+          {knowledge.length ? knowledge.map((item) => (
             <button className="card-button" type="button" onClick={() => setSelected({ type: "knowledge", item })} key={item.id}>
               <ContentCard
                 title={item.title}
@@ -286,13 +284,13 @@ export default function HomePage() {
                 imageAspect="16/9"
               />
             </button>
-          ))}
+          )) : <EmptyState />}
         </HomeSection>
       ) : null}
 
       {activeTab === "profiles" ? (
         <HomeSection viewMode={viewMode}>
-          {profiles.map((item) => (
+          {profiles.length ? profiles.map((item) => (
             <button className="card-button" type="button" onClick={() => setSelected({ type: "profile", item })} key={item.id}>
               <ContentCard
                 title={item.name}
@@ -313,7 +311,7 @@ export default function HomePage() {
                 <span className="muted-link">View Profile</span>
               </ContentCard>
             </button>
-          ))}
+          )) : <EmptyState />}
         </HomeSection>
       ) : null}
 
@@ -519,6 +517,10 @@ function HomeSection({ children, viewMode = "gallery" }: { children: ReactNode; 
   );
 }
 
+function EmptyState() {
+  return <div className="home-empty-state">ไม่มีข้อมูล</div>;
+}
+
 function trackKnowledgeView(id: string) {
   fetch(`/api/knowledge/${encodeURIComponent(id)}/view`, { method: "POST", keepalive: true }).catch(() => undefined);
 }
@@ -628,8 +630,4 @@ function setCategoryForTab(
   setCategoriesByTab: React.Dispatch<React.SetStateAction<Record<ActiveTab, string>>>,
 ) {
   setCategoriesByTab((current) => ({ ...current, [tab]: value }));
-}
-
-function getFirstAvailableImage(items: Array<Knowledge | News | Profile>) {
-  return items.map((item) => getPrimaryImage(item)).find(Boolean) ?? "";
 }

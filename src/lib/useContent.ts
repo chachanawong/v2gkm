@@ -15,8 +15,26 @@ const cache = new Map<string, { items: unknown[]; expiresAt: number }>();
 const bundleCache = new Map<string, { data: ContentBundle; expiresAt: number }>();
 const ttl = 45_000;
 
+function useSessionToken() {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sync = () => setToken(getUserToken());
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener("v2g-session", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("v2g-session", sync);
+    };
+  }, []);
+
+  return token;
+}
+
 export function useContent<T>(type: "knowledge" | "news" | "profiles" | "categories", membership?: Membership) {
-  const key = `${type}:${membership}`;
+  const token = useSessionToken();
+  const key = `${type}:${membership}:${token ?? "guest"}`;
   const cached = cache.get(key);
   const [items, setItems] = useState<T[]>(() => (cached ? (cached.items as T[]) : []));
   const [loading, setLoading] = useState(Boolean(membership) && !cached);
@@ -27,7 +45,7 @@ export function useContent<T>(type: "knowledge" | "news" | "profiles" | "categor
     const current = cache.get(key);
     if (current && current.expiresAt > Date.now()) return;
     fetch(`/api/content/${type}`, {
-      headers: getUserToken() ? { Authorization: `Bearer ${getUserToken()}` } : {},
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((response) => {
         if (!response.ok) throw new Error("Failed to load content");
@@ -45,7 +63,7 @@ export function useContent<T>(type: "knowledge" | "news" | "profiles" | "categor
     return () => {
       active = false;
     };
-  }, [key, membership, type]);
+  }, [key, membership, token, type]);
 
   return { items, loading: !membership || loading };
 }
@@ -53,7 +71,8 @@ export function useContent<T>(type: "knowledge" | "news" | "profiles" | "categor
 const MIN_LOADING_MS = 600;
 
 export function useContentBundle(membership?: Membership) {
-  const key = `all:${membership}`;
+  const token = useSessionToken();
+  const key = `all:${membership}:${token ?? "guest"}`;
   const cached = bundleCache.get(key);
   const [data, setData] = useState<ContentBundle | null>(() => cached?.data ?? null);
   const [loading, setLoading] = useState(Boolean(membership) && !cached);
@@ -66,7 +85,7 @@ export function useContentBundle(membership?: Membership) {
     const startedAt = Date.now();
     setLoading(true);
     fetch("/api/content/all", {
-      headers: getUserToken() ? { Authorization: `Bearer ${getUserToken()}` } : {},
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((response) => {
         if (!response.ok) throw new Error("Failed to load content");
@@ -82,7 +101,7 @@ export function useContentBundle(membership?: Membership) {
         };
         bundleCache.set(key, { data: safeNext, expiresAt: Date.now() + ttl });
         (Object.keys(safeNext) as (keyof ContentBundle)[]).forEach((type) => {
-          cache.set(`${type}:${membership}`, { items: safeNext[type], expiresAt: Date.now() + ttl });
+          cache.set(`${type}:${membership}:${token ?? "guest"}`, { items: safeNext[type], expiresAt: Date.now() + ttl });
         });
         setData((current) => (safeNext.knowledge.length || safeNext.news.length || safeNext.profiles.length || current === null ? safeNext : current));
         const remaining = MIN_LOADING_MS - (Date.now() - startedAt);
@@ -93,7 +112,7 @@ export function useContentBundle(membership?: Membership) {
     return () => {
       active = false;
     };
-  }, [key, membership]);
+  }, [key, membership, token]);
 
   return {
     data: data ?? { knowledge: [], news: [], profiles: [], categories: [] },
