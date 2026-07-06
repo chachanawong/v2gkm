@@ -105,7 +105,7 @@ async function loadDashboardData(): Promise<{
 }> {
   try {
     const [content, users, pinResetRequests] = await Promise.all([
-      batchListSheets(["knowledge", "news", "profiles", "audit_logs"], { fresh: true }),
+      batchListSheets(["knowledge", "news", "profiles", "audit_logs"]),
       listBoUsers(),
       listPendingPinResetRequests(),
     ]);
