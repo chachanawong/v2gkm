@@ -1,6 +1,24 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { LoadingOverlay } from "@/components/shared/LoadingOverlay";
 import "./globals.css";
+
+const googleSans = localFont({
+  src: [
+    {
+      path: "./fonts/GoogleSans-Variable.ttf",
+      style: "normal",
+      weight: "100 900",
+    },
+    {
+      path: "./fonts/GoogleSans-Italic-Variable.ttf",
+      style: "italic",
+      weight: "100 900",
+    },
+  ],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "V2G KM",
@@ -21,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th">
+    <html lang="th" className={googleSans.variable}>
       <body>
         {children}
         <LoadingOverlay />
