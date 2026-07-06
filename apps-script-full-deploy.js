@@ -48,7 +48,6 @@ const BO_MEMBER_HEADERS = [
   "upline",
   "phone",
   "memberType",
-  "loginpin",
   "loginpin_hash",
   "memberpin",
   "status"
@@ -516,13 +515,11 @@ function appendBoMember_(payload) {
     payload.upline || "",
     phone,
     normalizeMemberType_(payload.memberType),
-    payload.loginpin || "",
     payload.loginpin_hash || "",
     payload.memberpin || "",
     "active"
   ]);
   setTextCell_(sheet, rowNumber, "phone", phone);
-  setTextCell_(sheet, rowNumber, "loginpin", payload.loginpin || "");
   setTextCell_(sheet, rowNumber, "loginpin_hash", payload.loginpin_hash || "");
 }
 
@@ -625,7 +622,6 @@ function normalizeManagedSheetItem_(sheetName, item, keyHeader) {
   }
 
   if (sheetName === "bo_members") {
-    normalized.loginpin = String(normalized.loginpin || "").trim();
     normalized.loginpin_hash = String(normalized.loginpin_hash || "").trim();
     normalized.memberpin = String(normalized.memberpin || normalized.pin || "").trim();
     normalized.name = String(normalized.name || "").trim();
@@ -665,16 +661,14 @@ function setBoMemberLoginPinByPhone_(phone, loginpin) {
 
   const headers = values[0];
   const phoneColumn = headers.indexOf("phone");
-  const loginPinColumn = headers.indexOf("loginpin");
   const loginPinHashColumn = headers.indexOf("loginpin_hash");
 
-  if (phoneColumn === -1 || loginPinColumn === -1 || loginPinHashColumn === -1) {
+  if (phoneColumn === -1 || loginPinHashColumn === -1) {
     return false;
   }
 
   for (let index = 1; index < values.length; index += 1) {
     if (normalizePhone_(values[index][phoneColumn]) === normalizedPhone) {
-      setTextCell_(sheet, index + 1, "loginpin", "");
       setTextCell_(sheet, index + 1, "loginpin_hash", loginpin);
       return true;
     }
@@ -685,7 +679,7 @@ function setBoMemberLoginPinByPhone_(phone, loginpin) {
 
 function handleSetBoMemberLoginPin_(payload) {
   const phone = normalizePhone_(payload.phone);
-  const loginpin = String(payload.loginpinHash || payload.loginpin_hash || payload.loginpin || payload.loginPin || "").trim();
+  const loginpin = String(payload.loginpinHash || payload.loginpin_hash || payload.loginPin || "").trim();
 
   if (!phone || !loginpin) {
     throw new Error("Missing phone or loginpin.");
@@ -725,7 +719,6 @@ function clearBoMemberLoginPinByPhone_(phone) {
 
   for (let index = 1; index < values.length; index += 1) {
     if (normalizePhone_(values[index][phoneColumn]) === normalizedPhone) {
-      setTextCell_(sheet, index + 1, "loginpin", "");
       setTextCell_(sheet, index + 1, "loginpin_hash", "");
       return true;
     }
@@ -1825,7 +1818,7 @@ function buildColumnSpans_(columns) {
 }
 
 function normalizeSheetRecordValue_(header, value) {
-  if (header === "phone" || header === "loginpin" || header === "loginPin" || header === "loginpin_hash") {
+  if (header === "phone" || header === "loginpin_hash") {
     return String(value || "");
   }
 
@@ -2138,6 +2131,7 @@ function getOrCreateSheetByName_(sheetName, headers) {
 
   if (sheetName === BO_MEMBERS_SHEET_NAME) {
     removeLegacyBoMemberFaceColumns_(sheet);
+    removeLegacyBoMemberPinColumn_(sheet);
   }
 
   if (sheet.getLastRow() === 0) {
@@ -2174,6 +2168,19 @@ function removeLegacyBoMemberFaceColumns_(sheet) {
   columnIndexes.forEach(function(columnIndex) {
     sheet.deleteColumn(columnIndex);
   });
+}
+
+function removeLegacyBoMemberPinColumn_(sheet) {
+  if (sheet.getLastRow() === 0 || sheet.getLastColumn() === 0) {
+    return;
+  }
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const columnIndex = headers.indexOf("loginpin");
+
+  if (columnIndex !== -1) {
+    sheet.deleteColumn(columnIndex + 1);
+  }
 }
 
 function ensureSheetHeaders_(sheet, headers) {
@@ -2244,7 +2251,7 @@ function upsertRowByKey_(sheet, headers, keyHeader, item) {
   }
 
   headers.forEach(function(header) {
-    if (header === "phone" || header === "loginpin" || header === "loginPin" || header === "loginpin_hash") {
+    if (header === "phone" || header === "loginpin_hash") {
       setTextCell_(sheet, rowNumber, header, item[header] || "");
     }
   });

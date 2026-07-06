@@ -32,9 +32,9 @@ export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: 
 
   return (
     <header className="topbar">
-      <Link href={admin ? "/admin/dashboard" : "/home"} className="brand" aria-label="V2G KM">
-        <Image src="/images/v2g-logo-circle.png" alt="V2G" width={40} height={40} priority />
-        {admin ? <span>ADMIN</span> : null}
+      <Link href={admin ? "/admin/dashboard" : "/home"} className="brand" aria-label={admin ? "V2G ADMIN" : "V2G LEARNING CENTER"}>
+        <Image src="/images/v2g-logo-circle.png" alt={admin ? "V2G ADMIN" : "V2G LEARNING CENTER"} width={40} height={40} priority />
+        <span>{admin ? "ADMIN" : "V2G LEARNING CENTER"}</span>
       </Link>
       {!admin ? (
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginLeft: "auto" }}>

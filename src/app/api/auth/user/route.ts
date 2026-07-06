@@ -1,7 +1,7 @@
 import { findUserPin, loginUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
-import { listSheet, upsertSheet } from "@/lib/google-sheets";
 import { updateBoMemberLoginPin } from "@/lib/bo-members";
+import { listPinResetRequests, upsertPinResetRequest } from "@/lib/pin-reset-requests";
 import { hashPin, verifyPin } from "@/lib/pin";
 import { createUserToken } from "@/lib/session-token";
 import type { PinResetRequest } from "@/lib/types";
@@ -25,7 +25,7 @@ async function findPin(phone: string) {
 
 async function createResetRequest(phone: string, userName: string, userId: string) {
   const norm = normalizePhone(phone);
-  const requests = await listSheet("pin_reset_requests");
+  const requests = await listPinResetRequests();
   const existing = requests.find((item) => item.phone === norm && item.status === "pending");
   const next: PinResetRequest = existing
     ? { ...existing, requestedAt: new Date().toISOString(), note: "Requested from login page" }
@@ -38,7 +38,7 @@ async function createResetRequest(phone: string, userName: string, userId: strin
         requestedAt: new Date().toISOString(),
         note: "Requested from login page",
       };
-  await upsertSheet("pin_reset_requests", next);
+  await upsertPinResetRequest(next);
   await writeAuditLog({ actor: userName, role: "user", action: "request_pin_reset", resource: `users:${userId}` });
 }
 
@@ -47,8 +47,8 @@ export async function POST(request: Request) {
     const body = await request.json() as { phone?: string; loginPin?: string; newPin?: string; requestReset?: boolean };
     const { phone, loginPin, newPin, requestReset } = body;
 
-    if (!/^\d{9,12}$/.test(String(phone ?? "").replace(/\D/g, ""))) {
-      return Response.json({ error: "Invalid phone number" }, { status: 400 });
+    if (!/^\d{10}$/.test(String(phone ?? "").replace(/\D/g, ""))) {
+      return Response.json({ error: "เบอร์โทรศัพท์ต้องเป็นตัวเลข 10 หลัก" }, { status: 400 });
     }
 
     if (requestReset) {
@@ -80,8 +80,8 @@ export async function POST(request: Request) {
 
     // Step 2b: set new PIN
     if (newPin) {
-      if (!/^\d{4,6}$/.test(newPin)) {
-        return Response.json({ error: "PIN ต้องเป็นตัวเลข 4-6 หลัก" }, { status: 400 });
+      if (!/^\d{6}$/.test(newPin)) {
+        return Response.json({ error: "PIN ต้องเป็นตัวเลข 6 หลัก" }, { status: 400 });
       }
       const user = await loginUser(String(phone));
       if (!user) return Response.json({ error: "ไม่พบเบอร์นี้ในระบบ" }, { status: 401 });

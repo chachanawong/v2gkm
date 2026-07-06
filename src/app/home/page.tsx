@@ -143,7 +143,7 @@ export default function HomePage() {
       <section className="section-head">
         <div>
           <p className="eyebrow">Home</p>
-          <h1>V2G Academy Learning Center</h1>
+          <h1>V2G LEARNING CENTER</h1>
         </div>
       </section>
 

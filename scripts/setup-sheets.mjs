@@ -35,7 +35,7 @@ const headers = {
   audit_logs: ["id", "actor", "role", "action", "resource", "at"],
   preview_tokens: ["token", "resourceType", "resourceId", "expiresAt", "data"],
   pin_reset_requests: ["id", "phone", "userId", "userName", "status", "requestedAt", "resolvedAt", "resolvedBy", "note"],
-  bo_members: ["id", "createdAt", "date", "time", "name", "nickname", "upline", "phone", "memberType", "loginpin", "loginpin_hash", "memberpin", "status"],
+  bo_members: ["id", "createdAt", "date", "time", "name", "nickname", "upline", "phone", "memberType", "loginpin_hash", "memberpin", "status"],
 };
 
 const now = new Date().toISOString();

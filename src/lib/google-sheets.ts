@@ -156,10 +156,6 @@ function objectToRow<T>(headers: string[], item: T) {
 }
 
 function normalizeSheetItem(item: Record<string, unknown>) {
-  if (process.env.NODE_ENV === "development") {
-    console.log("[SHEETS RAW ITEM]", item);
-  }
-
   if ("visibility" in item) {
     item.visibility = normalizeMembership(String(item.visibility ?? ""));
   }
@@ -197,10 +193,6 @@ function normalizeSheetItem(item: Record<string, unknown>) {
 
   if ("updatedAt" in item && !item.updatedAt) {
     item.updatedAt = String(item.createdAt ?? "");
-  }
-
-  if (process.env.NODE_ENV === "development") {
-    console.log("[PARSED ITEM]", item);
   }
 
   return item;
@@ -261,25 +253,29 @@ function normalizeScriptRows<T extends SheetName>(sheet: T, rows: Record<string,
   ) as SheetMap[T]);
 }
 
-export async function listSheet<T extends SheetName>(sheet: T): Promise<SheetMap[T][]> {
-  const cached = readCache.get(sheet);
+export async function listSheet<T extends SheetName>(sheet: T, options?: { fresh?: boolean }): Promise<SheetMap[T][]> {
+  const cached = options?.fresh ? null : readCache.get(sheet);
   if (cached && cached.expiresAt > Date.now()) return cached.rows as SheetMap[T][];
   if (hasScriptConfig()) {
     const rows = await scriptGet<Record<string, unknown>[]>({ sheet });
     const objects = normalizeScriptRows(sheet, rows);
-    readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+    if (!options?.fresh) {
+      readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+    }
     return objects;
   }
   if (hasSheetsConfig()) {
     const response = await sheetsRequest<{ values?: string[][] }>(valuesPath(`${sheet}!A2:Z`));
     const rows = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], response.values);
-    readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
+    if (!options?.fresh) {
+      readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
+    }
     return rows;
   }
   return mockList(sheet);
 }
 
-export async function batchListSheets<T extends SheetName>(sheets: T[]): Promise<Record<T, SheetMap[T][]>> {
+export async function batchListSheets<T extends SheetName>(sheets: T[], options?: { fresh?: boolean }): Promise<Record<T, SheetMap[T][]>> {
   if (hasScriptConfig()) {
     const querySheets = sheets.filter((sheet, index) => sheets.indexOf(sheet) === index);
     const scriptResult = querySheets.length > 0
@@ -287,7 +283,9 @@ export async function batchListSheets<T extends SheetName>(sheets: T[]): Promise
       : ({} as Record<string, Record<string, unknown>[]>);
     return sheets.reduce((acc, sheet) => {
       const objects = normalizeScriptRows(sheet, scriptResult[sheet] ?? []);
-      readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+      if (!options?.fresh) {
+        readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+      }
       return { ...acc, [sheet]: objects };
     }, {} as Record<T, SheetMap[T][]>);
   }
@@ -297,7 +295,9 @@ export async function batchListSheets<T extends SheetName>(sheets: T[]): Promise
     return sheets.reduce((acc, sheet, index) => {
       const rows = response.valueRanges?.[index]?.values;
       const objects = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], rows);
-      readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+      if (!options?.fresh) {
+        readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+      }
       return { ...acc, [sheet]: objects };
     }, {} as Record<T, SheetMap[T][]>);
   }
