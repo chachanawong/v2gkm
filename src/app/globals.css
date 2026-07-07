@@ -74,10 +74,10 @@ img { object-fit: cover; }
 .brand {
   display: inline-flex;
   width: auto;
-  height: 40px;
+  min-height: 40px;
   align-items: center;
   gap: 10px;
-  overflow: hidden;
+  overflow: visible;
   color: var(--on-background);
   font-size: 12px;
   font-weight: 700;
@@ -2082,7 +2082,7 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
   .member-summary strong { font-size: 11px; }
   .member-summary span,
   .member-summary small { font-size: 10px; }
-  .brand { height: 36px; }
+  .brand { min-height: 40px; }
   .brand img { width: 40px; height: 40px; }
   .section-title { font-size: 26px; }
   .login-card, .panel, .list-panel { padding: 20px; }
