@@ -21,7 +21,7 @@ const googleSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "V2G KM",
+  title: "V2G Learning Center",
   description: "V2G Knowledge Management",
   icons: {
     icon: [
