@@ -49,7 +49,10 @@ img { object-fit: cover; }
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-@keyframes shimmer { to { background-position: -240% 0; } }
+@keyframes shimmer {
+  from { transform: translate3d(-140%, 0, 0); }
+  to { transform: translate3d(140%, 0, 0); }
+}
 @keyframes rise-up {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -2128,11 +2131,34 @@ input[type="datetime-local"] { scroll-margin-bottom: 180px; }
 .modal-list-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
 .skeleton-wrap { display: grid; gap: 8px; }
+.skeleton-line,
+.skeleton-wave {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f4f4f4 0%, #eeeeee 100%);
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
 .skeleton-line {
   height: 54px;
-  background: linear-gradient(90deg, var(--surface-container) 25%, var(--surface) 40%, var(--surface-container) 70%);
-  background-size: 240% 100%;
-  animation: shimmer 1.2s linear infinite;
+}
+.skeleton-line::after,
+.skeleton-wave::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.12) 30%, rgba(255, 255, 255, 0.82) 50%, rgba(255, 255, 255, 0.12) 70%, transparent 100%);
+  content: "";
+  pointer-events: none;
+  will-change: transform;
+  animation: shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line::after,
+  .skeleton-wave::after {
+    animation-duration: 0s;
+  }
 }
 .loading-overlay:not(#global-loading-overlay),
 .page-shell > .loading-overlay {

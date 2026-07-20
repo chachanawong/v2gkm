@@ -281,7 +281,7 @@ export default function HomePage() {
             <div className="knowledge-card-shell" key={item.id}>
               <ContentCard
                 title={item.title}
-                image={getKnowledgeCategoryImage(item.categories)}
+                image={getKnowledgeCategoryImage(item)}
                 imageFit="contain"
                 meta={(
                   <div className="knowledge-card-meta">
@@ -360,7 +360,7 @@ export default function HomePage() {
             <button className="card-button" type="button" onClick={() => { setListModal(null); setSelected({ type: "knowledge", item }); }} key={item.id}>
               <ContentCard
                 title={item.title}
-                image={getKnowledgeCategoryImage(item.categories)}
+                image={getKnowledgeCategoryImage(item)}
                 imageFit="contain"
                 meta={(
                   <div className="knowledge-card-meta">

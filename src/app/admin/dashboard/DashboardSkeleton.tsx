@@ -37,7 +37,7 @@ export function DashboardSkeleton() {
               <div className="bar-row" key={index}>
                 <span className="skeleton-line" style={{ height: 18, width: "100%" }} />
                 <div>
-                  <i style={{ width: `${84 - index * 16}%`, background: "linear-gradient(90deg, var(--surface-container) 25%, var(--surface) 40%, var(--surface-container) 70%)", backgroundSize: "240% 100%", animation: "shimmer 1.2s linear infinite" }} />
+                  <i className="skeleton-wave" style={{ width: `${84 - index * 16}%` }} />
                 </div>
                 <strong className="skeleton-line" style={{ height: 18, width: "100%" }} />
               </div>

@@ -97,7 +97,7 @@ export default function KnowledgePage() {
               <button className="card-button" type="button" onClick={() => locked ? undefined : openItem(item)} style={{ width: "100%", cursor: locked ? "default" : "pointer" }}>
                 <ContentCard
                   title={item.title}
-                  image={getKnowledgeCategoryImage(item.categories)}
+                  image={getKnowledgeCategoryImage(item)}
                   meta={<><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span><span>{getKnowledgeVideoCount(item) > 1 ? `${getKnowledgeVideoCount(item)} คลิป` : `${item.viewCount.toLocaleString()} views`}</span></>}
                 >
                   <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>

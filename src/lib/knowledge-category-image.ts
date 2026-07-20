@@ -22,9 +22,19 @@ const KNOWLEDGE_CATEGORY_IMAGE_MAP: Record<string, string> = {
 };
 
 const DEFAULT_KNOWLEDGE_CATEGORY_IMAGE = "/images/knowledge-categories/business-skill.png";
+const KNOWLEDGE_TITLE_IMAGE_MAP: Record<string, string> = {
+  mindset: "/images/knowledge-categories/mindset.png",
+};
 
-export function getKnowledgeCategoryImage(categories: unknown) {
-  const normalized = normalizeCategories(categories);
+export function getKnowledgeCategoryImage(value: unknown) {
+  const record = value && typeof value === "object" ? value as Record<string, unknown> : null;
+  const title = String(record?.title ?? "").trim().toLowerCase();
+
+  for (const [keyword, image] of Object.entries(KNOWLEDGE_TITLE_IMAGE_MAP)) {
+    if (title === keyword || title.includes(keyword)) return image;
+  }
+
+  const normalized = normalizeCategories(record?.categories ?? value);
 
   for (const category of normalized) {
     const match = KNOWLEDGE_CATEGORY_IMAGE_MAP[category.trim().toLowerCase()];
