@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { getBootstrapCache, setBootstrapCache } from "@/lib/bootstrap-cache";
 import { maskPhone } from "@/lib/format";
 import { requestGlobalConfirm, showGlobalLoading } from "@/lib/overlay";
 import { canAccessResource } from "@/lib/permissions";
-import { getUserToken } from "@/lib/client-session";
+import { clearAdminSession, clearUserSession, getUserToken } from "@/lib/client-session";
 import { useProgress } from "@/lib/useProgress";
 import type { AdminRole, LearningPath, Lesson, User } from "@/lib/types";
 
@@ -35,9 +36,8 @@ export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: 
         keepalive: true,
       }).catch(() => undefined);
     }
-    localStorage.removeItem(admin ? "v2g_admin" : "v2g_user");
-    localStorage.removeItem(admin ? "v2g_admin_token" : "v2g_user_token");
-    window.dispatchEvent(new Event("v2g-session"));
+    if (admin) clearAdminSession();
+    else clearUserSession();
     location.href = admin ? "/admin/login" : "/";
   }
 
@@ -65,43 +65,64 @@ export function TopNav({ admin = false, user, role }: { admin?: boolean; user?: 
 }
 
 function MembershipExpiryBadge() {
+  const token = getUserToken();
+  const cached = getBootstrapCache<{
+    daysRemaining: number | null;
+    latestPaymentDate?: string | null;
+  }>(`user:membership-status:${token ?? "guest"}`);
   const [state, setState] = useState<{
     loading: boolean;
     daysRemaining: number | null;
     latestPaymentDate?: string | null;
   }>(() => ({
-    loading: Boolean(getUserToken()),
-    daysRemaining: null,
-    latestPaymentDate: null,
+    loading: Boolean(token) && !cached,
+    daysRemaining: cached?.daysRemaining ?? null,
+    latestPaymentDate: cached?.latestPaymentDate ?? null,
   }));
 
   useEffect(() => {
-    const token = getUserToken();
     if (!token) return;
+    if (cached) return;
 
     let active = true;
-    fetch("/api/user/membership-status", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data: { daysRemaining?: number | null; latestPaymentDate?: string | null } | null) => {
-        if (!active) return;
-        setState({
-          loading: false,
-          daysRemaining: typeof data?.daysRemaining === "number" ? data.daysRemaining : null,
-          latestPaymentDate: data?.latestPaymentDate ?? null,
-        });
+    const load = () => {
+      fetch("/api/user/membership-status", {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .catch(() => {
-        if (active) {
-          setState({ loading: false, daysRemaining: null, latestPaymentDate: null });
-        }
-      });
+        .then((response) => response.ok ? response.json() : null)
+        .then((data: { daysRemaining?: number | null; latestPaymentDate?: string | null } | null) => {
+          if (!active) return;
+          const next = {
+            loading: false,
+            daysRemaining: typeof data?.daysRemaining === "number" ? data.daysRemaining : null,
+            latestPaymentDate: data?.latestPaymentDate ?? null,
+          };
+          setBootstrapCache(`user:membership-status:${token ?? "guest"}`, {
+            daysRemaining: next.daysRemaining,
+            latestPaymentDate: next.latestPaymentDate,
+          }, 300_000);
+          setState(next);
+        })
+        .catch(() => {
+          if (active) {
+            setState({ loading: false, daysRemaining: null, latestPaymentDate: null });
+          }
+        });
+    };
+
+    const idle = "requestIdleCallback" in window
+      ? window.requestIdleCallback(load, { timeout: 2000 })
+      : window.setTimeout(load, 600);
 
     return () => {
       active = false;
+      if ("cancelIdleCallback" in window && typeof idle === "number") {
+        window.cancelIdleCallback(idle);
+      } else {
+        window.clearTimeout(idle as number);
+      }
     };
-  }, []);
+  }, [cached, token]);
 
   if (state.loading) {
     return <span className="membership-expiry-badge">กำลังเช็กสมาชิก</span>;
@@ -132,22 +153,28 @@ function MembershipExpiryBadge() {
 }
 
 function MemberSummary({ user }: { user: User }) {
+  const token = getUserToken();
+  const cached = getBootstrapCache<{ paths: LearningPath[]; lessons: Lesson[] }>(`user:learning:${token ?? "guest"}`);
   const [hover, setHover] = useState(false);
-  const [paths, setPaths] = useState<LearningPath[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [paths, setPaths] = useState<LearningPath[]>(() => cached?.paths ?? []);
+  const [lessons, setLessons] = useState<Lesson[]>(() => cached?.lessons ?? []);
   const ref = useRef<HTMLDivElement>(null);
   const { pathProgress } = useProgress(user.id);
 
   useEffect(() => {
-    const token = getUserToken();
+    if (!hover && cached) return;
+    if (!hover && paths.length > 0) return;
     fetch("/api/learning", { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then((r) => r.json())
       .then((d) => {
-        if (Array.isArray(d.paths)) setPaths(d.paths as LearningPath[]);
-        if (Array.isArray(d.lessons)) setLessons(d.lessons as Lesson[]);
+        const nextPaths = Array.isArray(d.paths) ? d.paths as LearningPath[] : [];
+        const nextLessons = Array.isArray(d.lessons) ? d.lessons as Lesson[] : [];
+        setPaths(nextPaths);
+        setLessons(nextLessons);
+        setBootstrapCache(`user:learning:${token ?? "guest"}`, { paths: nextPaths, lessons: nextLessons }, 300_000);
       })
       .catch(() => undefined);
-  }, []);
+  }, [cached, hover, paths.length, token]);
 
   const progressData = paths.map((p) => {
     const pathLessons = lessons.filter((l) => l.pathId === p.id);

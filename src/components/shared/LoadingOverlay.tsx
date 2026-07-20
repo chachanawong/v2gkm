@@ -1,10 +1,13 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 
 export function LoadingOverlay() {
+  const pathname = usePathname();
   const activeIds = useRef(new Set<number>());
   const [active, setActive] = useState(false);
   const [message, setMessage] = useState("กำลังดำเนินการ");
@@ -15,6 +18,12 @@ export function LoadingOverlay() {
     confirmText: string;
     cancelText: string;
     tone: "default" | "danger";
+  } | null>(null);
+  const successTimeoutRef = useRef<number | null>(null);
+  const [success, setSuccess] = useState<{
+    id: number;
+    title: string;
+    detail: string;
   } | null>(null);
 
   useEffect(() => {
@@ -45,6 +54,8 @@ export function LoadingOverlay() {
       if (shouldShowForLink(target as HTMLAnchorElement | null)) show("กำลังโหลดหน้า");
     };
     const onSubmit = (event: SubmitEvent) => {
+      const form = event.target instanceof HTMLFormElement ? event.target : null;
+      if (form?.dataset.globalLoading === "off") return;
       if (!event.defaultPrevented) show("กำลังบันทึกข้อมูล");
     };
     const onShow = (event: Event) => {
@@ -88,12 +99,33 @@ export function LoadingOverlay() {
         tone: custom.detail.tone ?? "default",
       });
     };
+    const onSuccessShow = (event: Event) => {
+      const custom = event as CustomEvent<{
+        id: number;
+        title: string;
+        detail?: string;
+      }>;
+      if (!custom.detail) return;
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
+      setSuccess({
+        id: custom.detail.id,
+        title: custom.detail.title,
+        detail: custom.detail.detail ?? "ดำเนินการเรียบร้อย",
+      });
+      successTimeoutRef.current = window.setTimeout(() => {
+        setSuccess((current) => (current?.id === custom.detail.id ? null : current));
+        successTimeoutRef.current = null;
+      }, 2200);
+    };
 
     document.addEventListener("click", onClick, true);
     document.addEventListener("submit", onSubmit, true);
     window.addEventListener("v2g:loading-show", onShow as EventListener);
     window.addEventListener("v2g:loading-hide", onHide as EventListener);
     window.addEventListener("v2g:confirm-open", onConfirmOpen as EventListener);
+    window.addEventListener("v2g:success-show", onSuccessShow as EventListener);
     window.addEventListener("pageshow", hide);
     window.addEventListener("popstate", hide);
     window.addEventListener("load", hide);
@@ -105,12 +137,30 @@ export function LoadingOverlay() {
       window.removeEventListener("v2g:loading-show", onShow as EventListener);
       window.removeEventListener("v2g:loading-hide", onHide as EventListener);
       window.removeEventListener("v2g:confirm-open", onConfirmOpen as EventListener);
+      window.removeEventListener("v2g:success-show", onSuccessShow as EventListener);
       window.removeEventListener("pageshow", hide);
       window.removeEventListener("popstate", hide);
       window.removeEventListener("load", hide);
       document.removeEventListener("readystatechange", hide);
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      activeIds.current.clear();
+      setActive(false);
+      setMessage("กำลังดำเนินการ");
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (successTimeoutRef.current) {
+        window.clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, [pathname]);
 
   function resolveConfirm(confirmed: boolean) {
     if (!confirm) return;
@@ -151,6 +201,15 @@ export function LoadingOverlay() {
       >
         <p>{confirm?.message}</p>
       </Modal>
+      {success ? (
+        <div className="success-overlay" aria-live="polite" role="status">
+          <div className="success-card">
+            <CheckCircle2 size={30} />
+            <strong>{success.title}</strong>
+            <small>{success.detail}</small>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

@@ -1,0 +1,210 @@
+{"kind":"deck","id":"pr/t5ot5y","name":"Deck"}
+{"kind":"layout","layoutId":"a3f7c6bc-0e73-4d1f-ad26-89859e29be25","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"0645ae3e-3d83-47d2-ae80-c1b9e6478975","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/vf0t8c","slide":1,"title":"EXECUTIVE PORTFOLIO UPDATE","textShapes":22}
+{"kind":"shape","id":"sh/h4fu14je","slide":1,"name":"hero-header","bbox":[0,0,1280,124]}
+{"kind":"shape","id":"sh/u14b69k3","slide":1,"name":"hero-mark","bbox":[56,32,8,56]}
+{"kind":"textbox","id":"sh/v2dcze1o","slide":1,"name":"hero-kicker","text":"EXECUTIVE PORTFOLIO UPDATE","textPreview":"EXECUTIVE PORTFOLIO UPDATE","textChars":26,"textLines":1,"bbox":[80,29,420,22]}
+{"kind":"textbox","id":"sh/8zmt4z2x","slide":1,"name":"hero-title","text":"6 โครงการยัง On Track แต่คุณค่าของ Q3 ขึ้นอยู่กับ 3 การตัดสินใจในตอนนี้","textPreview":"6 โครงการยัง On Track แต่คุณค่าของ Q3 ขึ้นอยู่กับ 3 การตัดสินใจในตอนนี้","textChars":71,"textLines":1,"bbox":[76,52,1120,58]}
+{"kind":"textbox","id":"sh/90vux4ji","slide":1,"name":"metric-big-0","text":"6 / 6","textPreview":"6 / 6","textChars":5,"textLines":1,"bbox":[76,170,205,62]}
+{"kind":"textbox","id":"sh/mx4b2pkr","slide":1,"name":"metric-label-0","text":"workstreams on track","textPreview":"workstreams on track","textChars":20,"textLines":1,"bbox":[76,235,205,45]}
+{"kind":"shape","id":"sh/7ydcvu1c","slide":1,"name":"metric-accent-0","bbox":[76,286,38,4]}
+{"kind":"textbox","id":"sh/kv2t0f21","slide":1,"name":"metric-note-0","text":"3 ส่งมอบ Q3 • 3 ส่งมอบ Q4","textPreview":"3 ส่งมอบ Q3 • 3 ส่งมอบ Q4","textChars":25,"textLines":1,"bbox":[76,298,205,46]}
+{"kind":"shape","id":"sh/lwbutk3m","slide":1,"name":"metric-divider-1","bbox":[316,178,0,126]}
+{"kind":"textbox","id":"sh/l4z6h0r2","slide":1,"name":"metric-big-1","text":"≥฿5.8M","textPreview":"≥฿5.8M","textChars":6,"textLines":1,"bbox":[340,170,205,62]}
+{"kind":"textbox","id":"sh/03q5ovah","slide":1,"name":"metric-label-1","text":"identified benefit","textPreview":"identified benefit","textChars":18,"textLines":1,"bbox":[340,235,205,45]}
+{"kind":"shape","id":"sh/z2hofq9w","slide":1,"name":"metric-accent-1","bbox":[340,286,38,4]}
+{"kind":"textbox","id":"sh/y18nmlsr","slide":1,"name":"metric-note-1","text":"ควรให้ Finance ยืนยันก่อนรายงานผลจริง","textPreview":"ควรให้ Finance ยืนยันก่อนรายงานผลจริง","textChars":37,"textLines":1,"bbox":[340,298,205,46]}
+{"kind":"shape","id":"sh/d0z6dgr6","slide":1,"name":"metric-divider-2","bbox":[580,178,0,126]}
+{"kind":"textbox","id":"sh/cz65kval","slide":1,"name":"metric-big-2","text":"2×","textPreview":"2×","textChars":2,"textLines":1,"bbox":[604,170,205,62]}
+{"kind":"textbox","id":"sh/byxobq90","slide":1,"name":"metric-label-2","text":"speed / efficiency target","textPreview":"speed / efficiency target","textChars":25,"textLines":1,"bbox":[604,235,205,45]}
+{"kind":"shape","id":"sh/qxonilsf","slide":1,"name":"metric-accent-2","bbox":[604,286,38,4]}
+{"kind":"textbox","id":"sh/pwf69gru","slide":1,"name":"metric-note-2","text":"Teacher payment และ Preschool CRM","textPreview":"Teacher payment และ Preschool CRM","textChars":33,"textLines":1,"bbox":[604,298,205,46]}
+{"kind":"shape","id":"sh/ob65gba9","slide":1,"name":"metric-divider-3","bbox":[844,178,0,126]}
+{"kind":"textbox","id":"sh/gfa5wbi5","slide":1,"name":"metric-big-3","text":"100%","textPreview":"100%","textChars":4,"textLines":1,"bbox":[868,170,205,62]}
+{"kind":"textbox","id":"sh/hgj65gzq","slide":1,"name":"metric-label-3","text":"manual work removal","textPreview":"manual work removal","textChars":19,"textLines":1,"bbox":[868,235,205,45]}
+{"kind":"shape","id":"sh/udsnul0f","slide":1,"name":"metric-accent-3","bbox":[868,286,38,4]}
+{"kind":"textbox","id":"sh/fe1o36hk","slide":1,"name":"metric-note-3","text":"เป้าหมาย Fast Fix และ iAudit","textPreview":"เป้าหมาย Fast Fix และ iAudit","textChars":28,"textLines":1,"bbox":[868,298,205,46]}
+{"kind":"textbox","id":"sh/sbq5sbi9","slide":1,"name":"hero-insight-title","text":"ข้อสรุปสำหรับผู้บริหาร","textPreview":"ข้อสรุปสำหรับผู้บริหาร","textChars":22,"textLines":1,"bbox":[76,378,300,34]}
+{"kind":"shape","id":"sh/tcz61gzu","slide":1,"name":"hero-insight-rule","bbox":[76,419,1128,0]}
+{"kind":"textbox","id":"sh/6p8nq103","slide":1,"name":"hero-insight","text":"สถานะรวมยังเป็นสีเขียว แต่ความเสี่ยงไม่ได้อยู่ที่งานพัฒนา—อยู่ที่การตัดสินใจเรื่อง CRM, กำลังของ Digital Team และเจ้าของผลลัพธ์ทางธุรกิจของ AI","textPreview":"สถานะรวมยังเป็นสีเขียว แต่ความเสี่ยงไม่ได้อยู่ที่งานพัฒนา—อยู่ที่การตัดสินใจเรื่อง CRM, กำลังของ Digital Team และเจ้าของผลลัพธ์ทางธุรกิจข...","textChars":142,"textLines":1,"bbox":[76,438,1128,72]}
+{"kind":"shape","id":"sh/7qhoz6ho","slide":1,"name":"hero-ask-band","bbox":[56,540,1168,112]}
+{"kind":"textbox","id":"sh/c7up4vid","slide":1,"name":"hero-ask-label","text":"DECIDE NOW","textPreview":"DECIDE NOW","textChars":10,"textLines":1,"bbox":[80,560,160,24]}
+{"kind":"textbox","id":"sh/d836d0zy","slide":1,"name":"hero-ask-1","text":"1  เลือกกรอบตัดสินใจ CRM สำหรับ Fast Fix","textPreview":"1  เลือกกรอบตัดสินใจ CRM สำหรับ Fast Fix","textChars":40,"textLines":1,"bbox":[80,592,340,35]}
+{"kind":"textbox","id":"sh/n2583u10","slide":1,"name":"hero-ask-2","text":"2  จัดสรร Digital Team ให้ Preschool","textPreview":"2  จัดสรร Digital Team ให้ Preschool","textChars":36,"textLines":1,"bbox":[454,592,320,35]}
+{"kind":"textbox","id":"sh/m1wrupkf","slide":1,"name":"hero-ask-3","text":"3  ตั้ง Business Owner + Benefit Owner ให้ AI","textPreview":"3  ตั้ง Business Owner + Benefit Owner ให้ AI","textChars":45,"textLines":1,"bbox":[808,592,380,35]}
+{"kind":"shape","id":"sh/947a54j6","slide":1,"name":"footer-line-1","bbox":[56,680,1168,0]}
+{"kind":"textbox","id":"sh/o3e9wz2l","slide":1,"name":"footer-source-1","text":"Source: Task status snapshot provided | Framing adapted from Strategic Business Presentation","textPreview":"Source: Task status snapshot provided | Framing adapted from Strategic Business Presentation","textChars":92,"textLines":1,"bbox":[56,686,900,20]}
+{"kind":"textbox","id":"sh/b6ps7e1c","slide":1,"name":"footer-page-1","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1164,685,60,22]}
+{"kind":"notes","id":"nt/vf0t8c","slide":1,"text":""}
+{"kind":"slide","id":"sl/qutmet","slide":2,"title":"Q3 DELIVERY","textShapes":30}
+{"kind":"shape","id":"sh/qdof21wb","slide":2,"name":"header-2","bbox":[0,0,1280,104]}
+{"kind":"shape","id":"sh/d0zydgv2","slide":2,"name":"gold-mark-2","bbox":[56,28,8,48]}
+{"kind":"textbox","id":"sh/cz6x4beh","slide":2,"name":"kicker-2","text":"Q3 DELIVERY","textPreview":"Q3 DELIVERY","textChars":11,"textLines":1,"bbox":[80,25,460,22]}
+{"kind":"textbox","id":"sh/3axw76d0","slide":2,"name":"title-2","text":"3 โครงการ Q3 พร้อมสร้างมูลค่า—หากข้อพึ่งพาถูกปลดล็อกทันที","textPreview":"3 โครงการ Q3 พร้อมสร้างมูลค่า—หากข้อพึ่งพาถูกปลดล็อกทันที","textChars":57,"textLines":1,"bbox":[76,47,1120,46]}
+{"kind":"shape","id":"sh/29ofy1wf","slide":2,"name":"th-2-0","bbox":[56,126,202,42]}
+{"kind":"textbox","id":"sh/pcfe9wvq","slide":2,"name":"th-text-2-0","text":"PROJECT / TARGET","textPreview":"PROJECT / TARGET","textChars":16,"textLines":1,"bbox":[64,133,186,28]}
+{"kind":"shape","id":"sh/4b6x0re5","slide":2,"name":"th-2-1","bbox":[258,126,250,42]}
+{"kind":"textbox","id":"sh/f6dw3mdo","slide":2,"name":"th-text-2-1","text":"EVIDENCE NOW","textPreview":"EVIDENCE NOW","textChars":12,"textLines":1,"bbox":[266,133,234,28]}
+{"kind":"shape","id":"sh/u54fuhw3","slide":2,"name":"th-2-2","bbox":[508,126,248,42]}
+{"kind":"textbox","id":"sh/4vmx4jal","slide":2,"name":"th-text-2-2","text":"NEXT MILESTONE","textPreview":"NEXT MILESTONE","textChars":14,"textLines":1,"bbox":[516,133,232,28]}
+{"kind":"shape","id":"sh/5wvydobq","slide":2,"name":"th-2-3","bbox":[756,126,248,42]}
+{"kind":"textbox","id":"sh/it4f29sf","slide":2,"name":"th-text-2-3","text":"EXECUTIVE SUPPORT","textPreview":"EXECUTIVE SUPPORT","textChars":17,"textLines":1,"bbox":[764,133,232,28]}
+{"kind":"shape","id":"sh/3udgbet0","slide":2,"name":"th-2-4","bbox":[1004,126,220,42]}
+{"kind":"textbox","id":"sh/wr2x0ja9","slide":2,"name":"th-text-2-4","text":"BUSINESS VALUE","textPreview":"BUSINESS VALUE","textChars":14,"textLines":1,"bbox":[1012,133,204,28]}
+{"kind":"shape","id":"sh/hsby94bu","slide":2,"name":"row-bg-2-0","bbox":[56,168,1168,154]}
+{"kind":"shape","id":"sh/upkfy9s3","slide":2,"name":"row-line-2-0","bbox":[56,322,1168,0]}
+{"kind":"shape","id":"sh/vqtg7eto","slide":2,"name":"col-line-2-0-1","bbox":[258,168,0,154]}
+{"kind":"shape","id":"sh/0n6xc3ad","slide":2,"name":"col-line-2-0-2","bbox":[508,168,0,154]}
+{"kind":"shape","id":"sh/1ofyl8by","slide":2,"name":"col-line-2-0-3","bbox":[756,168,0,154]}
+{"kind":"shape","id":"sh/psr694f6","slide":2,"name":"col-line-2-0-4","bbox":[1004,168,0,154]}
+{"kind":"shape","id":"sh/o7ipgzyl","slide":2,"name":"status-dot-2-0","bbox":[70,191,14,14]}
+{"kind":"textbox","id":"sh/n69o7ux0","slide":2,"name":"project-2-0","text":"Fast Fix","textPreview":"Fast Fix","textChars":8,"textLines":1,"bbox":[92,181,157,30]}
+{"kind":"shape","id":"sh/2507e9gf","slide":2,"name":"due-bg-2-0","bbox":[70,223,102,28]}
+{"kind":"textbox","id":"sh/14r654zu","slide":2,"name":"due-2-0","text":"ON TRACK • JUL/Q3","textPreview":"ON TRACK • JUL/Q3","textChars":17,"textLines":1,"bbox":[76,226,90,21]}
+{"kind":"textbox","id":"sh/03i5czy9","slide":2,"name":"outcome-2-0","text":"ยกเลิกงาน manual 100%","textPreview":"ยกเลิกงาน manual 100%","textChars":21,"textLines":1,"bbox":[70,259,176,52]}
+{"kind":"textbox","id":"sh/f29o3uho","slide":2,"name":"evidence-2-0","text":"ออกแบบมาตรฐานกระบวนการ frontend และ backend แล้ว","textPreview":"ออกแบบมาตรฐานกระบวนการ frontend และ backend แล้ว","textChars":48,"textLines":1,"bbox":[270,182,226,126]}
+{"kind":"textbox","id":"sh/e1gnapgj","slide":2,"name":"milestone-2-0","text":"สรุป SOP และเปรียบเทียบทางเลือก CRM สำหรับบริการ Fast Fix","textPreview":"สรุป SOP และเปรียบเทียบทางเลือก CRM สำหรับบริการ Fast Fix","textChars":57,"textLines":1,"bbox":[520,182,224,126]}
+{"kind":"textbox","id":"sh/d0761kzy","slide":2,"name":"ask-2-0","text":"แต่งตั้งผู้ตัดสินใจและอนุมัติเกณฑ์เลือก CRM","textPreview":"แต่งตั้งผู้ตัดสินใจและอนุมัติเกณฑ์เลือก CRM","textChars":43,"textLines":1,"bbox":[768,182,224,126]}
+{"kind":"textbox","id":"sh/szy58fyd","slide":2,"name":"value-2-0","text":"ยกเลิกงาน manual 100%","textPreview":"ยกเลิกงาน manual 100%","textChars":21,"textLines":1,"bbox":[1016,182,196,126]}
+{"kind":"shape","id":"sh/i5w3ilwb","slide":2,"name":"row-line-2-1","bbox":[56,476,1168,0]}
+{"kind":"shape","id":"sh/j654bqxg","slide":2,"name":"col-line-2-1-1","bbox":[258,322,0,154]}
+{"kind":"shape","id":"sh/47elkve1","slide":2,"name":"col-line-2-1-2","bbox":[508,322,0,154]}
+{"kind":"shape","id":"sh/58nmd0vm","slide":2,"name":"col-line-2-1-3","bbox":[756,322,0,154]}
+{"kind":"shape","id":"sh/uhc3elwz","slide":2,"name":"col-line-2-1-4","bbox":[1004,322,0,154]}
+{"kind":"shape","id":"sh/v2l47qxk","slide":2,"name":"status-dot-2-1","bbox":[70,345,14,14]}
+{"kind":"textbox","id":"sh/w3elgbe5","slide":2,"name":"project-2-1","text":"Preschool","textPreview":"Preschool","textChars":9,"textLines":1,"bbox":[92,335,157,30]}
+{"kind":"shape","id":"sh/h4nm9gfq","slide":2,"name":"due-bg-2-1","bbox":[70,377,102,28]}
+{"kind":"textbox","id":"sh/mdc3a1w3","slide":2,"name":"due-2-1","text":"ON TRACK • Q3","textPreview":"ON TRACK • Q3","textChars":13,"textLines":1,"bbox":[76,380,90,21]}
+{"kind":"textbox","id":"sh/7elk36xo","slide":2,"name":"outcome-2-1","text":"2× เร็วขึ้น + ฿2.8M saving","textPreview":"2× เร็วขึ้น + ฿2.8M saving","textChars":26,"textLines":1,"bbox":[70,413,176,52]}
+{"kind":"textbox","id":"sh/zq50f2h4","slide":2,"name":"evidence-2-1","text":"ปรับปรุงกระบวนการจ่ายเงินครูแล้ว","textPreview":"ปรับปรุงกระบวนการจ่ายเงินครูแล้ว","textChars":32,"textLines":1,"bbox":[270,336,226,126]}
+{"kind":"textbox","id":"sh/ypwzmh0j","slide":2,"name":"milestone-2-1","text":"อนุมัติจาก Digital Team; กำหนด UAT และ go-live ของ Preschool CRM","textPreview":"อนุมัติจาก Digital Team; กำหนด UAT และ go-live ของ Preschool CRM","textChars":64,"textLines":1,"bbox":[520,336,224,126]}
+{"kind":"textbox","id":"sh/lsnihcza","slide":2,"name":"ask-2-1","text":"กันกำลัง Digital Team และยืนยัน go-live gate","textPreview":"กันกำลัง Digital Team และยืนยัน go-live gate","textChars":44,"textLines":1,"bbox":[768,336,224,126]}
+{"kind":"textbox","id":"sh/0reho7ip","slide":2,"name":"value-2-1","text":"2× เร็วขึ้น + ฿2.8M saving","textPreview":"2× เร็วขึ้น + ฿2.8M saving","textChars":26,"textLines":1,"bbox":[1016,336,196,126]}
+{"kind":"shape","id":"sh/b2l0b2h8","slide":2,"name":"row-bg-2-2","bbox":[56,476,1168,154]}
+{"kind":"shape","id":"sh/q1czix0n","slide":2,"name":"row-line-2-2","bbox":[56,630,1168,0]}
+{"kind":"shape","id":"sh/d4nidcze","slide":2,"name":"col-line-2-2-1","bbox":[258,476,0,154]}
+{"kind":"shape","id":"sh/c3uhk7it","slide":2,"name":"col-line-2-2-2","bbox":[508,476,0,154]}
+{"kind":"shape","id":"sh/3yl07ihw","slide":2,"name":"col-line-2-2-3","bbox":[756,476,0,154]}
+{"kind":"shape","id":"sh/2xczex0b","slide":2,"name":"col-line-2-2-4","bbox":[1004,476,0,154]}
+{"kind":"shape","id":"sh/s3qx8jy9","slide":2,"name":"status-dot-2-2","bbox":[70,499,14,14]}
+{"kind":"textbox","id":"sh/t4zehofu","slide":2,"name":"project-2-2","text":"AI Solution","textPreview":"AI Solution","textChars":11,"textLines":1,"bbox":[92,489,157,30]}
+{"kind":"shape","id":"sh/618f6tg3","slide":2,"name":"due-bg-2-2","bbox":[70,531,102,28]}
+{"kind":"textbox","id":"sh/r2hwfyxo","slide":2,"name":"due-2-2","text":"ON TRACK • Q3","textPreview":"ON TRACK • Q3","textChars":13,"textLines":1,"bbox":[76,534,90,21]}
+{"kind":"textbox","id":"sh/g7axc3yl","slide":2,"name":"outcome-2-2","text":"≥฿3M + ตัด manual 100%","textPreview":"≥฿3M + ตัด manual 100%","textChars":22,"textLines":1,"bbox":[70,567,176,52]}
+{"kind":"textbox","id":"sh/18jyl8f6","slide":2,"name":"evidence-2-2","text":"Central Pattana Décor go-live แล้ว","textPreview":"Central Pattana Décor go-live แล้ว","textChars":34,"textLines":1,"bbox":[270,490,226,126]}
+{"kind":"textbox","id":"sh/e5sfatgf","slide":2,"name":"milestone-2-2","text":"Solar Home UX/UI; iAudit design & coding; จัดลำดับ AI use cases","textPreview":"Solar Home UX/UI; iAudit design & coding; จัดลำดับ AI use cases","textChars":63,"textLines":1,"bbox":[520,490,224,126]}
+{"kind":"textbox","id":"sh/f61wjyx0","slide":2,"name":"ask-2-2","text":"ตั้ง Business Owner, adoption KPI และผู้ยืนยัน benefit","textPreview":"ตั้ง Business Owner, adoption KPI และผู้ยืนยัน benefit","textChars":54,"textLines":1,"bbox":[768,490,224,126]}
+{"kind":"textbox","id":"sh/wb6x0zy1","slide":2,"name":"value-2-2","text":"≥฿3M + ตัด manual 100%","textPreview":"≥฿3M + ตัด manual 100%","textChars":22,"textLines":1,"bbox":[1016,490,196,126]}
+{"kind":"shape","id":"sh/xcfe94zm","slide":2,"name":"footer-line-2","bbox":[56,680,1168,0]}
+{"kind":"textbox","id":"sh/dw7mhwne","slide":2,"name":"footer-source-2","text":"Source: Task status snapshot provided | Framing adapted from Strategic Business Presentation","textPreview":"Source: Task status snapshot provided | Framing adapted from Strategic Business Presentation","textChars":92,"textLines":1,"bbox":[56,686,900,20]}
+{"kind":"textbox","id":"sh/cvelobmt","slide":2,"name":"footer-page-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1164,685,60,22]}
+{"kind":"notes","id":"nt/qutmet","slide":2,"text":""}
+{"kind":"slide","id":"sl/pxkb2m","slide":3,"title":"Q4 FOUNDATIONS","textShapes":30}
+{"kind":"shape","id":"sh/adcfa5or","slide":3,"name":"header-3","bbox":[0,0,1280,104]}
+{"kind":"shape","id":"sh/x03elkn2","slide":3,"name":"gold-mark-3","bbox":[56,28,8,48]}
+{"kind":"textbox","id":"sh/wfuxcf6h","slide":3,"name":"kicker-3","text":"Q4 FOUNDATIONS","textPreview":"Q4 FOUNDATIONS","textChars":14,"textLines":1,"bbox":[80,25,460,22]}
+{"kind":"textbox","id":"sh/na1wfq50","slide":3,"name":"title-3","text":"งานฐานราก Q4 ต้องเปลี่ยนจาก “กิจกรรม” เป็น milestone ที่วัดได้","textPreview":"งานฐานราก Q4 ต้องเปลี่ยนจาก “กิจกรรม” เป็น milestone ที่วัดได้","textChars":62,"textLines":1,"bbox":[76,47,1120,46]}
+{"kind":"shape","id":"sh/m9sv6lof","slide":3,"name":"th-3-0","bbox":[56,126,202,42]}
+{"kind":"textbox","id":"sh/9cjeh0n6","slide":3,"name":"th-text-3-0","text":"PROJECT / TARGET","textPreview":"PROJECT / TARGET","textChars":16,"textLines":1,"bbox":[64,133,186,28]}
+{"kind":"shape","id":"sh/8bad8v6l","slide":3,"name":"th-3-1","bbox":[258,126,250,42]}
+{"kind":"textbox","id":"sh/765wru5k","slide":3,"name":"th-text-3-1","text":"EVIDENCE NOW","textPreview":"EVIDENCE NOW","textChars":12,"textLines":1,"bbox":[266,133,234,28]}
+{"kind":"shape","id":"sh/65wfip4z","slide":3,"name":"th-3-2","bbox":[508,126,248,42]}
+{"kind":"textbox","id":"sh/kjyt4jy5","slide":3,"name":"th-text-3-2","text":"NEXT MILESTONE","textPreview":"NEXT MILESTONE","textChars":14,"textLines":1,"bbox":[516,133,232,28]}
+{"kind":"shape","id":"sh/lk7adofq","slide":3,"name":"th-3-3","bbox":[756,126,248,42]}
+{"kind":"textbox","id":"sh/yhgb29gf","slide":3,"name":"th-text-3-3","text":"EXECUTIVE SUPPORT","textPreview":"EXECUTIVE SUPPORT","textChars":17,"textLines":1,"bbox":[764,133,232,28]}
+{"kind":"shape","id":"sh/jipsbexk","slide":3,"name":"th-3-4","bbox":[1004,126,220,42]}
+{"kind":"textbox","id":"sh/wfyt0jy9","slide":3,"name":"th-text-3-4","text":"BUSINESS VALUE","textPreview":"BUSINESS VALUE","textChars":14,"textLines":1,"bbox":[1012,133,204,28]}
+{"kind":"shape","id":"sh/xg7a94fu","slide":3,"name":"row-bg-3-0","bbox":[56,168,1168,154]}
+{"kind":"shape","id":"sh/adwby9g3","slide":3,"name":"row-line-3-0","bbox":[56,322,1168,0]}
+{"kind":"shape","id":"sh/beps7exo","slide":3,"name":"col-line-3-0-1","bbox":[258,168,0,154]}
+{"kind":"shape","id":"sh/obetwzyx","slide":3,"name":"col-line-3-0-2","bbox":[508,168,0,154]}
+{"kind":"shape","id":"sh/9cna54fi","slide":3,"name":"col-line-3-0-3","bbox":[756,168,0,154]}
+{"kind":"shape","id":"sh/p8fq90rm","slide":3,"name":"col-line-3-0-4","bbox":[1004,168,0,154]}
+{"kind":"shape","id":"sh/o7690vq1","slide":3,"name":"status-dot-3-0","bbox":[70,191,14,14]}
+{"kind":"textbox","id":"sh/36x87q9g","slide":3,"name":"project-3-0","text":"Development","textPreview":"Development","textChars":11,"textLines":1,"bbox":[92,181,157,30]}
+{"kind":"shape","id":"sh/25oryl8v","slide":3,"name":"due-bg-3-0","bbox":[70,223,102,28]}
+{"kind":"textbox","id":"sh/14fq5gra","slide":3,"name":"due-3-0","text":"ON TRACK • Q4","textPreview":"ON TRACK • Q4","textChars":13,"textLines":1,"bbox":[76,226,90,21]}
+{"kind":"textbox","id":"sh/gj6pwbqp","slide":3,"name":"outcome-3-0","text":"Retail ERP SOP ตามมาตรฐานสากล","textPreview":"Retail ERP SOP ตามมาตรฐานสากล","textChars":29,"textLines":1,"bbox":[70,259,176,52]}
+{"kind":"textbox","id":"sh/fix83694","slide":3,"name":"evidence-3-0","text":"ทำ ERP As-Is assessment และหารือ first draft แล้ว","textPreview":"ทำ ERP As-Is assessment และหารือ first draft แล้ว","textChars":49,"textLines":1,"bbox":[270,182,226,126]}
+{"kind":"textbox","id":"sh/eh47ul8z","slide":3,"name":"milestone-3-0","text":"เก็บ requirement; ปิด To-Be design review กับ P’Chap","textPreview":"เก็บ requirement; ปิด To-Be design review กับ P’Chap","textChars":52,"textLines":1,"bbox":[520,182,224,126]}
+{"kind":"textbox","id":"sh/l0zqhk7u","slide":3,"name":"ask-3-0","text":"ยืนยัน SME, reviewer และวัน sign-off ที่ชัดเจน","textPreview":"ยืนยัน SME, reviewer และวัน sign-off ที่ชัดเจน","textChars":46,"textLines":1,"bbox":[768,182,224,126]}
+{"kind":"textbox","id":"sh/0fq98fq9","slide":3,"name":"value-3-0","text":"Retail ERP SOP ตามมาตรฐานสากล","textPreview":"Retail ERP SOP ตามมาตรฐานสากล","textChars":29,"textLines":1,"bbox":[1016,182,196,126]}
+{"kind":"shape","id":"sh/y90fmdkf","slide":3,"name":"row-line-3-1","bbox":[56,476,1168,0]}
+{"kind":"shape","id":"sh/ja9wfil0","slide":3,"name":"col-line-3-1-1","bbox":[258,322,0,154]}
+{"kind":"shape","id":"sh/kbixon2l","slide":3,"name":"col-line-3-1-2","bbox":[508,322,0,154]}
+{"kind":"shape","id":"sh/lcrehs3q","slide":3,"name":"col-line-3-1-3","bbox":[756,322,0,154]}
+{"kind":"shape","id":"sh/a5gfidk3","slide":3,"name":"col-line-3-1-4","bbox":[1004,322,0,154]}
+{"kind":"shape","id":"sh/b69wbylo","slide":3,"name":"status-dot-3-1","bbox":[70,345,14,14]}
+{"kind":"textbox","id":"sh/w7ixk329","slide":3,"name":"project-3-1","text":"Residential","textPreview":"Residential","textChars":11,"textLines":1,"bbox":[92,335,157,30]}
+{"kind":"shape","id":"sh/x8red83u","slide":3,"name":"due-bg-3-1","bbox":[70,377,102,28]}
+{"kind":"textbox","id":"sh/u1kfuxkn","slide":3,"name":"due-3-1","text":"ON TRACK • Q4","textPreview":"ON TRACK • Q4","textChars":13,"textLines":1,"bbox":[76,380,90,21]}
+{"kind":"textbox","id":"sh/f2tgn218","slide":3,"name":"outcome-3-1","text":"Value-chain SOP + 2 permit SOPs","textPreview":"Value-chain SOP + 2 permit SOPs","textChars":31,"textLines":1,"bbox":[70,413,176,52]}
+{"kind":"textbox","id":"sh/fu9sju58","slide":3,"name":"evidence-3-1","text":"ทำ ERP As-Is assessment แล้ว","textPreview":"ทำ ERP As-Is assessment แล้ว","textChars":28,"textLines":1,"bbox":[270,336,226,126]}
+{"kind":"textbox","id":"sh/et0ba9o3","slide":3,"name":"milestone-3-1","text":"เก็บ requirement; standardize flow; จัดทำ 2 SOP สำหรับ government permit","textPreview":"เก็บ requirement; standardize flow; จัดทำ 2 SOP สำหรับ government permit","textChars":72,"textLines":1,"bbox":[520,336,224,126]}
+{"kind":"textbox","id":"sh/1wral4ne","slide":3,"name":"ask-3-1","text":"แต่งตั้ง process owner และผู้ตรวจเงื่อนไขภาครัฐ","textPreview":"แต่งตั้ง process owner และผู้ตรวจเงื่อนไขภาครัฐ","textChars":47,"textLines":1,"bbox":[768,336,224,126]}
+{"kind":"textbox","id":"sh/0vitcz6t","slide":3,"name":"value-3-1","text":"Value-chain SOP + 2 permit SOPs","textPreview":"Value-chain SOP + 2 permit SOPs","textChars":31,"textLines":1,"bbox":[1016,336,196,126]}
+{"kind":"shape","id":"sh/rqpsfu5c","slide":3,"name":"row-bg-3-2","bbox":[56,476,1168,154]}
+{"kind":"shape","id":"sh/q5gb6por","slide":3,"name":"row-line-3-2","bbox":[56,630,1168,0]}
+{"kind":"shape","id":"sh/dsrah4ni","slide":3,"name":"col-line-3-2-1","bbox":[258,476,0,154]}
+{"kind":"shape","id":"sh/srit8z6x","slide":3,"name":"col-line-3-2-2","bbox":[508,476,0,154]}
+{"kind":"shape","id":"sh/bmtcre5g","slide":3,"name":"col-line-3-2-3","bbox":[756,476,0,154]}
+{"kind":"shape","id":"sh/a1kbitov","slide":3,"name":"col-line-3-2-4","bbox":[1004,476,0,154]}
+{"kind":"shape","id":"sh/87upcbmd","slide":3,"name":"status-dot-3-2","bbox":[70,499,14,14]}
+{"kind":"textbox","id":"sh/t8nqlg3y","slide":3,"name":"project-3-2","text":"Compliance","textPreview":"Compliance","textChars":10,"textLines":1,"bbox":[92,489,157,30]}
+{"kind":"shape","id":"sh/65c7al4n","slide":3,"name":"due-bg-3-2","bbox":[70,531,102,28]}
+{"kind":"textbox","id":"sh/76l8j6l8","slide":3,"name":"due-3-2","text":"ON TRACK • Q4","textPreview":"ON TRACK • Q4","textChars":13,"textLines":1,"bbox":[76,534,90,21]}
+{"kind":"textbox","id":"sh/gbe9gvmp","slide":3,"name":"outcome-3-2","text":"0 case + awareness ≥80%","textPreview":"0 case + awareness ≥80%","textChars":23,"textLines":1,"bbox":[70,567,176,52]}
+{"kind":"textbox","id":"sh/hcnqp03a","slide":3,"name":"evidence-3-2","text":"วางแผนและจัดทำ artwork แล้ว","textPreview":"วางแผนและจัดทำ artwork แล้ว","textChars":27,"textLines":1,"bbox":[270,490,226,126]}
+{"kind":"textbox","id":"sh/u9w7el4j","slide":3,"name":"milestone-3-2","text":"เปิด communication; วัด baseline/post awareness; ติดตาม compliance cases","textPreview":"เปิด communication; วัด baseline/post awareness; ติดตาม compliance cases","textChars":72,"textLines":1,"bbox":[520,490,224,126]}
+{"kind":"textbox","id":"sh/va58nql4","slide":3,"name":"ask-3-2","text":"อนุมัติ calendar, channel และ accountable owner","textPreview":"อนุมัติ calendar, channel และ accountable owner","textChars":47,"textLines":1,"bbox":[768,490,224,126]}
+{"kind":"textbox","id":"sh/4zy9kvml","slide":3,"name":"value-3-2","text":"0 case + awareness ≥80%","textPreview":"0 case + awareness ≥80%","textChars":23,"textLines":1,"bbox":[1016,490,196,126]}
+{"kind":"shape","id":"sh/507qt036","slide":3,"name":"footer-line-3","bbox":[56,680,1168,0]}
+{"kind":"textbox","id":"sh/dw3qd0va","slide":3,"name":"footer-source-3","text":"Source: Task status snapshot provided | Framing adapted from Strategic Business Presentation","textPreview":"Source: Task status snapshot provided | Framing adapted from Strategic Business Presentation","textChars":92,"textLines":1,"bbox":[56,686,900,20]}
+{"kind":"textbox","id":"sh/cvup4vep","slide":3,"name":"footer-page-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1164,685,60,22]}
+{"kind":"notes","id":"nt/pxkb2m","slide":3,"text":""}
+{"kind":"slide","id":"sl/pbo8m8","slide":4,"title":"RECOMMENDED GOVERNANCE","textShapes":28}
+{"kind":"shape","id":"sh/2xc7ah0n","slide":4,"name":"header-4","bbox":[0,0,1280,104]}
+{"kind":"shape","id":"sh/p03qlwjy","slide":4,"name":"gold-mark-4","bbox":[56,28,8,48]}
+{"kind":"textbox","id":"sh/ozupcrid","slide":4,"name":"kicker-4","text":"RECOMMENDED GOVERNANCE","textPreview":"RECOMMENDED GOVERNANCE","textChars":22,"textLines":1,"bbox":[80,25,460,22]}
+{"kind":"textbox","id":"sh/fa18f21w","slide":4,"name":"title-4","text":"4 การตัดสินใจที่เปลี่ยน status report ให้กลายเป็น action","textPreview":"4 การตัดสินใจที่เปลี่ยน status report ให้กลายเป็น action","textChars":56,"textLines":1,"bbox":[76,47,1120,46]}
+{"kind":"textbox","id":"sh/e9s76x0b","slide":4,"name":"decision-col-a","text":"DECISION / ACTION","textPreview":"DECISION / ACTION","textChars":17,"textLines":1,"bbox":[160,130,560,26]}
+{"kind":"textbox","id":"sh/1cjqhcj2","slide":4,"name":"decision-col-b","text":"ACCOUNTABLE ROLE","textPreview":"ACCOUNTABLE ROLE","textChars":16,"textLines":1,"bbox":[760,130,240,26]}
+{"kind":"textbox","id":"sh/gbap87ih","slide":4,"name":"decision-col-c","text":"WHEN","textPreview":"WHEN","textChars":4,"textLines":1,"bbox":[1030,130,170,26]}
+{"kind":"textbox","id":"sh/r618b210","slide":4,"name":"decision-number-0","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[56,175,76,54]}
+{"kind":"shape","id":"sh/65872x0f","slide":4,"name":"decision-line-0","bbox":[136,176,0,82]}
+{"kind":"textbox","id":"sh/03yl032d","slide":4,"name":"decision-title-0","text":"อนุมัติเกณฑ์และเจ้าของการตัดสินใจ CRM","textPreview":"อนุมัติเกณฑ์และเจ้าของการตัดสินใจ CRM","textChars":37,"textLines":1,"bbox":[160,172,560,34]}
+{"kind":"textbox","id":"sh/14rmt8jy","slide":4,"name":"decision-why-0","text":"Fast Fix ต้องการ decision gate มากกว่าการอัปเดตงานออกแบบ","textPreview":"Fast Fix ต้องการ decision gate มากกว่าการอัปเดตงานออกแบบ","textChars":56,"textLines":1,"bbox":[160,210,560,50]}
+{"kind":"textbox","id":"sh/e1g3ytk7","slide":4,"name":"decision-owner-0","text":"Business Owner + Digital","textPreview":"Business Owner + Digital","textChars":24,"textLines":1,"bbox":[760,180,240,28]}
+{"kind":"shape","id":"sh/z2p4ry1s","slide":4,"name":"timing-bg-0","bbox":[1030,177,170,34]}
+{"kind":"textbox","id":"sh/czylw321","slide":4,"name":"timing-0","text":"THIS MEETING","textPreview":"THIS MEETING","textChars":12,"textLines":1,"bbox":[1038,182,154,22]}
+{"kind":"shape","id":"sh/d07mpo3m","slide":4,"name":"decision-separator-0","bbox":[160,274,1040,0]}
+{"kind":"textbox","id":"sh/qdg3utkb","slide":4,"name":"decision-number-1","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[56,289,76,54]}
+{"kind":"shape","id":"sh/rep4nylw","slide":4,"name":"decision-line-1","bbox":[136,290,0,82]}
+{"kind":"textbox","id":"sh/wvi58n2l","slide":4,"name":"decision-title-1","text":"จัดสรร capacity ให้ Preschool CRM","textPreview":"จัดสรร capacity ให้ Preschool CRM","textChars":33,"textLines":1,"bbox":[160,286,560,34]}
+{"kind":"textbox","id":"sh/xwbm1sj6","slide":4,"name":"decision-why-1","text":"คุณค่า 2× และ ฿2.8M จะเกิดเมื่อมี UAT / go-live ที่ชัดเจน","textPreview":"คุณค่า 2× และ ฿2.8M จะเกิดเมื่อมี UAT / go-live ที่ชัดเจน","textChars":57,"textLines":1,"bbox":[160,324,560,50]}
+{"kind":"textbox","id":"sh/lgnu5o7y","slide":4,"name":"decision-owner-1","text":"Digital Lead + Process Owner","textPreview":"Digital Lead + Process Owner","textChars":28,"textLines":1,"bbox":[760,294,240,28]}
+{"kind":"shape","id":"sh/kfedwjqd","slide":4,"name":"timing-bg-1","bbox":[1030,291,170,34]}
+{"kind":"textbox","id":"sh/je5c3yps","slide":4,"name":"timing-1","text":"THIS MEETING","textPreview":"THIS MEETING","textChars":12,"textLines":1,"bbox":[1038,296,154,22]}
+{"kind":"shape","id":"sh/ydwvut87","slide":4,"name":"decision-separator-1","bbox":[160,388,1040,0]}
+{"kind":"textbox","id":"sh/xc3u1o7m","slide":4,"name":"decision-number-2","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[56,403,76,54]}
+{"kind":"shape","id":"sh/wbudsjqh","slide":4,"name":"decision-line-2","bbox":[136,404,0,82]}
+{"kind":"textbox","id":"sh/balczepw","slide":4,"name":"decision-title-2","text":"ตั้ง Business Owner และ Benefit Owner ให้ทุก AI use case","textPreview":"ตั้ง Business Owner และ Benefit Owner ให้ทุก AI use case","textChars":56,"textLines":1,"bbox":[160,400,560,34]}
+{"kind":"textbox","id":"sh/a9cvq98b","slide":4,"name":"decision-why-2","text":"แยก technical completion ออกจาก adoption และ realized benefit","textPreview":"แยก technical completion ออกจาก adoption และ realized benefit","textChars":61,"textLines":1,"bbox":[160,438,560,50]}
+{"kind":"textbox","id":"sh/983ux47q","slide":4,"name":"decision-owner-2","text":"BU Owner + Finance","textPreview":"BU Owner + Finance","textChars":18,"textLines":1,"bbox":[760,408,240,28]}
+{"kind":"shape","id":"sh/onutozq5","slide":4,"name":"timing-bg-2","bbox":[1030,405,170,34]}
+{"kind":"textbox","id":"sh/et8ry5o3","slide":4,"name":"timing-2","text":"WITHIN 2 WEEKS","textPreview":"WITHIN 2 WEEKS","textChars":14,"textLines":1,"bbox":[1038,410,154,22]}
+{"kind":"shape","id":"sh/ze1s7a5o","slide":4,"name":"decision-separator-2","bbox":[160,502,1040,0]}
+{"kind":"textbox","id":"sh/0fa90f69","slide":4,"name":"decision-number-3","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[56,517,76,54]}
+{"kind":"shape","id":"sh/1gja9kne","slide":4,"name":"decision-line-3","bbox":[136,518,0,82]}
+{"kind":"textbox","id":"sh/qp8ru5or","slide":4,"name":"decision-title-3","text":"ล็อก owner, due date และ evidence ของ ERP / Compliance","textPreview":"ล็อก owner, due date และ evidence ของ ERP / Compliance","textChars":54,"textLines":1,"bbox":[160,514,560,34]}
+{"kind":"textbox","id":"sh/rqhs3a5c","slide":4,"name":"decision-why-3","text":"Q4 ควรติดตาม sign-off, SOP adoption และ awareness—not activity count","textPreview":"Q4 ควรติดตาม sign-off, SOP adoption และ awareness—not activity count","textChars":68,"textLines":1,"bbox":[160,552,560,50]}
+{"kind":"textbox","id":"sh/crq9wv6x","slide":4,"name":"decision-owner-3","text":"PMO + Process Owners","textPreview":"PMO + Process Owners","textChars":20,"textLines":1,"bbox":[760,522,240,28]}
+{"kind":"shape","id":"sh/dsza50ni","slide":4,"name":"timing-bg-3","bbox":[1030,519,170,34]}
+{"kind":"textbox","id":"sh/ilorqlov","slide":4,"name":"timing-3","text":"WITHIN 2 WEEKS","textPreview":"WITHIN 2 WEEKS","textChars":14,"textLines":1,"bbox":[1038,524,154,22]}
+{"kind":"shape","id":"sh/3mxszq5g","slide":4,"name":"closing-band","bbox":[56,636,1168,32]}
+{"kind":"textbox","id":"sh/vehov69c","slide":4,"name":"closing-text","text":"Next update: report decision closed • milestone achieved • benefit validated • risk / support needed","textPreview":"Next update: report decision closed • milestone achieved • benefit validated • risk / support needed","textChars":100,"textLines":1,"bbox":[70,642,1140,20]}
+{"kind":"shape","id":"sh/ud8n21sr","slide":4,"name":"footer-line-4","bbox":[56,680,1168,0]}
+{"kind":"textbox","id":"sh/hgj6xwr2","slide":4,"name":"footer-source-4","text":"Source: Task status snapshot provided | Framing adapted from Strategic Business Presentation","textPreview":"Source: Task status snapshot provided | Framing adapted from Strategic Business Presentation","textChars":92,"textLines":1,"bbox":[56,686,900,20]}
+{"kind":"textbox","id":"sh/wfqp4rah","slide":4,"name":"footer-page-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1164,685,60,22]}
+{"kind":"notes","id":"nt/pbo8m8","slide":4,"text":""}

@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { findUserPin, loginUser } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
 import { updateBoMemberLoginPin } from "@/lib/bo-members";
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
       if (!existingPin.hash) return Response.json({ error: "ยังไม่มี Login PIN กรุณาตั้งค่า PIN ก่อน" }, { status: 400 });
       const valid = verifyPin(loginPin, String(phone), existingPin.hash);
       if (!valid) return Response.json({ error: "Login PIN ไม่ถูกต้อง" }, { status: 401 });
-      await writeAuditLog({ actor: user.name, role: "user", action: "login", resource: `users:${user.id}` });
+      after(() => writeAuditLog({ actor: user.name, role: "user", action: "login", resource: `users:${user.id}` }));
       return Response.json({ user, token: createUserToken({ id: user.id, membership: user.membership }) });
     }
 

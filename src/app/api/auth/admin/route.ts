@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { loginAdmin } from "@/lib/auth";
 import { writeAuditLog } from "@/lib/audit";
 import { createAdminToken } from "@/lib/session-token";
@@ -12,6 +13,6 @@ export async function POST(request: Request) {
   }
   const admin = await loginAdmin(email, password);
   if (!admin) return Response.json({ error: "Admin not found" }, { status: 401 });
-  await writeAuditLog({ actor: admin.name, role: "admin", action: "login", resource: `admins:${admin.id}` });
+  after(() => writeAuditLog({ actor: admin.name, role: "admin", action: "login", resource: `admins:${admin.id}` }));
   return Response.json({ admin, token: createAdminToken({ id: admin.id, role: admin.role }) });
 }

@@ -2,18 +2,22 @@
 
 import { ExternalLink, LayoutGrid, LayoutList } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/shared/AppShell";
 import { CalendarWidget } from "@/components/shared/CalendarWidget";
 import { ContentCard, VisibilityBadge } from "@/components/shared/ContentCard";
 import { HighlightBanner } from "@/components/shared/HighlightBanner";
 import { ImageCarousel } from "@/components/shared/ImageCarousel";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { getCategoryOptionNames, resolveCategoryTypes } from "@/lib/category-settings";
 import { useStoredMembership } from "@/lib/client-session";
+import { getKnowledgeCategoryImage } from "@/lib/knowledge-category-image";
+import { getKnowledgeVideoCount, getKnowledgeVideos } from "@/lib/knowledge-playlist";
 import { getPrimaryImage, normalizeCategories, normalizeImageUrl, normalizeImages } from "@/lib/normalize";
+import { useKnowledgePlaylist } from "@/lib/useKnowledgePlaylist";
 import { useContentBundle } from "@/lib/useContent";
 import { useLocalStorageSet } from "@/lib/useLocalStorage";
 import type { Category, Knowledge, News, Profile } from "@/lib/types";
@@ -45,6 +49,9 @@ const TAB_BACKGROUNDS: Record<ActiveTab, string> = {
   profiles: "/images/home-tabs/people.png",
 };
 
+const HOME_NEWS_IMAGE_ASPECT = "2 / 3";
+const HOME_LEARNING_IMAGE_ASPECT = "16 / 9";
+
 export default function HomePage() {
   const membership = useStoredMembership();
   const [query, setQuery] = useState("");
@@ -59,14 +66,6 @@ export default function HomePage() {
   const [listModal, setListModal] = useState<ListModal | null>(null);
   const { data, loading } = useContentBundle(membership);
   const readNews = useLocalStorageSet("v2g_read_news");
-  const [initializing, setInitializing] = useState(true);
-  const initTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    initTimer.current = setTimeout(() => setInitializing(false), 400);
-    return () => { if (initTimer.current) clearTimeout(initTimer.current); };
-  }, []);
-
-  const showOverlay = initializing || loading;
   const normalizedQuery = query.trim().toLowerCase();
   const categoryOptionsByTab = useMemo(() => ({
     news: getCategoryOptionNames(data.categories, "news"),
@@ -129,17 +128,9 @@ export default function HomePage() {
 
   const unreadCount = useMemo(() => news.filter((n) => !readNews.has(n.id)).length, [news, readNews]);
   const tabCounts = { news: allNews.length, knowledge: allKnowledge.length, profiles: allProfiles.length };
+  const hasLoadedContent = data.news.length > 0 || data.knowledge.length > 0 || data.profiles.length > 0;
   return (
     <AppShell>
-      {showOverlay ? (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "grid", placeItems: "center", background: "rgba(251,251,251,0.82)", backdropFilter: "blur(3px)" }} aria-live="polite" role="status">
-          <div className="loading-card">
-            <span className="loading-spinner" />
-            <strong>Loading</strong>
-            <small>กำลังโหลดข้อมูล</small>
-          </div>
-        </div>
-      ) : null}
       <section className="section-head">
         <div>
           <p className="eyebrow">Home</p>
@@ -147,7 +138,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {!loading ? (
+      {!loading || hasLoadedContent ? (
         <section className="home-hero">
           {highlights.length ? (
             <div className="home-hero-highlight">
@@ -189,10 +180,22 @@ export default function HomePage() {
             <CalendarWidget variant="panel" />
           </div>
         </section>
-      ) : null}
+      ) : (
+        <section className="home-hero">
+          <div className="home-hero-highlight">
+            <Skeleton rows={6} />
+          </div>
+          <div className="home-hero-tabs">
+            <Skeleton rows={6} />
+          </div>
+          <div className="home-hero-calendar">
+            <Skeleton rows={5} />
+          </div>
+        </section>
+      )}
 
       {/* Active section heading + tools */}
-      {!loading ? (
+      {!loading || hasLoadedContent ? (
         <div className="section-content-head">
           <h2 style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span>{TAB_DEFS.find((t) => t.tab === activeTab)?.label}</span>
@@ -243,13 +246,19 @@ export default function HomePage() {
       ) : null}
 
       {/* Active tab content */}
-      {activeTab === "news" ? (
+      {loading && !hasLoadedContent ? (
+        <HomeSection viewMode={viewMode}>
+          <Skeleton rows={6} />
+        </HomeSection>
+      ) : null}
+
+      {activeTab === "news" && (!loading || hasLoadedContent) ? (
         <HomeSection viewMode={viewMode}>
           {news.length ? news.map((item) => {
             const event = parseNewsEvent(item);
             return (
               <button className="card-button" type="button" onClick={() => { readNews.mark(item.id); setSelected({ type: "news", item }); }} key={item.id}>
-                <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<><MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="news" />{isNew(item) ? <span style={{ color: "var(--success)", fontSize: 10, fontWeight: 700 }}>NEW</span> : null}{!readNews.has(item.id) ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", display: "inline-block" }} /> : null}</>}>
+                <ContentCard title={item.title} image={getPrimaryImage(item)} imageAspect={HOME_NEWS_IMAGE_ASPECT} imageFit="contain" meta={<><MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="news" />{isNew(item) ? <span style={{ color: "var(--success)", fontSize: 10, fontWeight: 700 }}>NEW</span> : null}{!readNews.has(item.id) ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", display: "inline-block" }} /> : null}</>}>
                   {event.date || event.time || event.channel ? (
                     <div className="news-event-info">
                       {event.date ? <span>📅 {event.date}</span> : null}
@@ -266,13 +275,14 @@ export default function HomePage() {
         </HomeSection>
       ) : null}
 
-      {activeTab === "knowledge" ? (
+      {activeTab === "knowledge" && (!loading || hasLoadedContent) ? (
         <HomeSection viewMode={viewMode}>
           {knowledge.length ? knowledge.map((item) => (
-            <button className="card-button" type="button" onClick={() => setSelected({ type: "knowledge", item })} key={item.id}>
+            <div className="knowledge-card-shell" key={item.id}>
               <ContentCard
                 title={item.title}
-                image={getPrimaryImage(item)}
+                image={getKnowledgeCategoryImage(item.categories)}
+                imageFit="contain"
                 meta={(
                   <div className="knowledge-card-meta">
                     <div className="knowledge-card-meta-tags">
@@ -281,14 +291,28 @@ export default function HomePage() {
                     <span className="knowledge-card-date">{item.uploadDate}</span>
                   </div>
                 )}
-                imageAspect="16/9"
-              />
-            </button>
+                imageAspect={HOME_LEARNING_IMAGE_ASPECT}
+              >
+                <div className="knowledge-card-footer">
+                  <a
+                    href={item.youtubeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="knowledge-card-youtube-link"
+                    aria-label={`เปิด ${item.title} บน YouTube`}
+                  >
+                    <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>
+                      YouTube
+                    </Button>
+                  </a>
+                </div>
+              </ContentCard>
+            </div>
           )) : <EmptyState />}
         </HomeSection>
       ) : null}
 
-      {activeTab === "profiles" ? (
+      {activeTab === "profiles" && (!loading || hasLoadedContent) ? (
         <HomeSection viewMode={viewMode}>
           {profiles.length ? profiles.map((item) => (
             <button className="card-button" type="button" onClick={() => setSelected({ type: "profile", item })} key={item.id}>
@@ -325,7 +349,7 @@ export default function HomePage() {
         {listModal === "news" ? (
           <CategoryList items={news} renderItem={(item) => (
             <button className="card-button" type="button" onClick={() => { setListModal(null); setSelected({ type: "news", item }); }} key={item.id}>
-              <ContentCard title={item.title} image={getPrimaryImage(item)} meta={<MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="news" />}>
+              <ContentCard title={item.title} image={getPrimaryImage(item)} imageAspect={HOME_NEWS_IMAGE_ASPECT} imageFit="contain" meta={<MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="news" />}>
                 <p className="line-clamp multiline">{item.body}</p>
               </ContentCard>
             </button>
@@ -336,7 +360,8 @@ export default function HomePage() {
             <button className="card-button" type="button" onClick={() => { setListModal(null); setSelected({ type: "knowledge", item }); }} key={item.id}>
               <ContentCard
                 title={item.title}
-                image={getPrimaryImage(item)}
+                image={getKnowledgeCategoryImage(item.categories)}
+                imageFit="contain"
                 meta={(
                   <div className="knowledge-card-meta">
                     <div className="knowledge-card-meta-tags">
@@ -346,8 +371,11 @@ export default function HomePage() {
                     <span className="knowledge-card-date">{item.uploadDate}</span>
                   </div>
                 )}
+                imageAspect={HOME_LEARNING_IMAGE_ASPECT}
               >
-                <p className="line-clamp two-line">{item.youtubeUrl}</p>
+                <p className="line-clamp two-line">
+                  {getKnowledgeVideoCount(item) > 1 ? `${getKnowledgeVideoCount(item)} คลิปใน Playlist` : item.youtubeUrl}
+                </p>
               </ContentCard>
             </button>
           )} />
@@ -453,26 +481,93 @@ function SelectedDetail({ selected, masterCategories }: { selected: SelectedItem
       </div>
     );
   }
-  const item = selected.item;
+  return <KnowledgeDetail key={selected.item.id} item={selected.item} />;
+}
+
+function KnowledgeDetail({ item }: { item: Knowledge }) {
+  const { videos, loading: playlistLoading, failed: playlistFailed, isPlaylist } = useKnowledgePlaylist(item);
+  const [activeVideoId, setActiveVideoId] = useState(videos[0]?.id ?? "");
+  const resolvedActiveVideoId = videos.some((video) => video.id === activeVideoId) ? activeVideoId : (videos[0]?.id ?? "");
+  const activeVideo = videos.find((video) => video.id === resolvedActiveVideoId) ?? videos[0] ?? null;
+
   return (
     <div className="knowledge-preview">
-      <KnowledgeVideoEmbed
-        youtubeId={item.youtubeId}
-        youtubeUrl={item.youtubeUrl}
-        title={item.title}
-        onView={() => trackKnowledgeView(item.id)}
-      />
+      {playlistLoading && isPlaylist ? (
+        <div className="knowledge-playlist-loading">กำลังโหลดรายการคลิปจาก Playlist...</div>
+      ) : playlistFailed && isPlaylist && videos.length === 0 ? (
+        <div className="knowledge-playlist-error">
+          <strong>ดึงรายการคลิปจาก Playlist ไม่สำเร็จ</strong>
+          <small>ตอนนี้ระบบยังเปิดดูได้เฉพาะลิงก์ YouTube ต้นทาง เพราะ YouTube API ของโปรเจกต์ยังไม่อนุญาตให้อ่าน playlist</small>
+        </div>
+      ) : (
+        <KnowledgeVideoEmbed
+          youtubeId={activeVideo?.youtubeId ?? item.youtubeId}
+          youtubeUrl={activeVideo?.youtubeUrl ?? item.youtubeUrl}
+          title={activeVideo?.title ?? item.title}
+          onView={() => trackKnowledgeView(item.id)}
+        />
+      )}
       <div className="card-meta">
         <VisibilityBadge value={item.visibility} />
         <span>{item.uploadDate}</span>
-        <span>{item.viewCount.toLocaleString()} views</span>
+        <span>{videos.length > 1 ? `${videos.length} คลิป` : `${item.viewCount.toLocaleString()} views`}</span>
       </div>
       <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
-      <p className="multiline">{item.title}</p>
-      <a href={item.youtubeUrl} target="_blank" rel="noreferrer" onClick={() => trackKnowledgeView(item.id)}>
+      {videos.length > 1 ? (
+        <>
+          <div className="knowledge-playlist-list">
+            {videos.map((video, index) => (
+              <button
+                key={video.id}
+                type="button"
+                className={video.id === resolvedActiveVideoId ? "knowledge-playlist-item active" : "knowledge-playlist-item"}
+                onClick={() => setActiveVideoId(video.id)}
+              >
+                <span className="knowledge-playlist-index">{index + 1}</span>
+                <span className="knowledge-playlist-copy">
+                  <strong>{video.title}</strong>
+                  <small>{video.publishedAt || "วิดีโอใน Playlist"}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <PlaylistLinks videos={videos} />
+        </>
+      ) : (
+        !isPlaylist || (!playlistLoading && !playlistFailed) ? <p className="multiline">{item.title}</p> : null
+      )}
+      <a href={activeVideo?.youtubeUrl ?? item.youtubeUrl} target="_blank" rel="noreferrer" onClick={() => trackKnowledgeView(item.id)}>
         <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>เปิด YouTube</Button>
       </a>
     </div>
+  );
+}
+
+function PlaylistLinks({ videos }: { videos: ReturnType<typeof getKnowledgeVideos> }) {
+  if (videos.length <= 1) return null;
+
+  return (
+    <section className="knowledge-playlist-links">
+      <h3>ลิงก์ทั้งหมดใน Playlist</h3>
+      <div className="knowledge-playlist-link-list">
+        {videos.map((video, index) => (
+          <a
+            key={video.id}
+            className="knowledge-playlist-link-item"
+            href={video.youtubeUrl || `https://www.youtube.com/watch?v=${video.youtubeId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span className="knowledge-playlist-link-index">{index + 1}</span>
+            <span className="knowledge-playlist-link-copy">
+              <strong>{video.title}</strong>
+              <small>{video.youtubeUrl || `https://www.youtube.com/watch?v=${video.youtubeId}`}</small>
+            </span>
+            <ExternalLink size={14} />
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }
 

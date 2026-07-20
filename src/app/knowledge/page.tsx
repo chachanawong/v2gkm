@@ -10,8 +10,11 @@ import { Modal } from "@/components/ui/Modal";
 import { getCategoryOptionNames } from "@/lib/category-settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getStoredMembership, useStoredMembership } from "@/lib/client-session";
+import { getKnowledgeCategoryImage } from "@/lib/knowledge-category-image";
+import { getKnowledgeVideoCount, getKnowledgeVideos } from "@/lib/knowledge-playlist";
+import { useKnowledgePlaylist } from "@/lib/useKnowledgePlaylist";
 import { useLocalStorageList, useLocalStorageSet } from "@/lib/useLocalStorage";
-import { getPrimaryImage, normalizeCategories } from "@/lib/normalize";
+import { normalizeCategories } from "@/lib/normalize";
 import { useContent } from "@/lib/useContent";
 import { canAccess } from "@/lib/visibility";
 import type { Category, Knowledge } from "@/lib/types";
@@ -94,8 +97,8 @@ export default function KnowledgePage() {
               <button className="card-button" type="button" onClick={() => locked ? undefined : openItem(item)} style={{ width: "100%", cursor: locked ? "default" : "pointer" }}>
                 <ContentCard
                   title={item.title}
-                  image={getPrimaryImage(item)}
-                  meta={<><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span><span>{item.viewCount.toLocaleString()} views</span></>}
+                  image={getKnowledgeCategoryImage(item.categories)}
+                  meta={<><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span><span>{getKnowledgeVideoCount(item) > 1 ? `${getKnowledgeVideoCount(item)} คลิป` : `${item.viewCount.toLocaleString()} views`}</span></>}
                 >
                   <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
                   {locked ? (
@@ -127,21 +130,7 @@ export default function KnowledgePage() {
       </div>
 
       <Modal open={Boolean(selected)} title={selected?.title ?? "Knowledge"} onClose={() => setSelected(null)}>
-        {selected ? (
-          <div className="knowledge-preview">
-            <VideoEmbed youtubeId={selected.youtubeId} youtubeUrl={selected.youtubeUrl} title={selected.title} onView={() => trackView(selected.id)} />
-            <div className="card-meta"><VisibilityBadge value={selected.visibility} /><span>{selected.uploadDate}</span><span>{selected.viewCount.toLocaleString()} views</span></div>
-            <div className="tag-row">{normalizeCategories(selected.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
-            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-              <a href={selected.youtubeUrl || `https://www.youtube.com/watch?v=${selected.youtubeId}`} target="_blank" rel="noreferrer">
-                <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>เปิด YouTube</Button>
-              </a>
-              <Button size="sm" variant="ghost" onClick={() => bookmarks.toggle(selected.id)}>
-                {bookmarks.has(selected.id) ? "ลบบุ๊กมาร์ก" : "บุ๊กมาร์ก"}
-              </Button>
-            </div>
-          </div>
-        ) : null}
+        {selected ? <KnowledgeModalDetail key={selected.id} item={selected} bookmarked={bookmarks.has(selected.id)} onToggleBookmark={() => bookmarks.toggle(selected.id)} /> : null}
       </Modal>
     </AppShell>
   );
@@ -149,6 +138,95 @@ export default function KnowledgePage() {
 
 function trackView(id: string) {
   fetch(`/api/knowledge/${encodeURIComponent(id)}/view`, { method: "POST", keepalive: true }).catch(() => undefined);
+}
+
+function KnowledgeModalDetail({
+  item,
+  bookmarked,
+  onToggleBookmark,
+}: {
+  item: Knowledge;
+  bookmarked: boolean;
+  onToggleBookmark: () => void;
+}) {
+  const { videos, loading: playlistLoading, failed: playlistFailed, isPlaylist } = useKnowledgePlaylist(item);
+  const [activeVideoId, setActiveVideoId] = useState(videos[0]?.id ?? "");
+  const resolvedActiveVideoId = videos.some((video) => video.id === activeVideoId) ? activeVideoId : (videos[0]?.id ?? "");
+  const activeVideo = videos.find((video) => video.id === resolvedActiveVideoId) ?? videos[0] ?? null;
+
+  return (
+    <div className="knowledge-preview">
+      {playlistLoading && isPlaylist ? (
+        <div className="knowledge-playlist-loading">กำลังโหลดรายการคลิปจาก Playlist...</div>
+      ) : playlistFailed && isPlaylist && videos.length === 0 ? (
+        <div className="knowledge-playlist-error">
+          <strong>ดึงรายการคลิปจาก Playlist ไม่สำเร็จ</strong>
+          <small>ตอนนี้ระบบยังเปิดดูได้เฉพาะลิงก์ YouTube ต้นทาง เพราะ YouTube API ของโปรเจกต์ยังไม่อนุญาตให้อ่าน playlist</small>
+        </div>
+      ) : (
+        <VideoEmbed youtubeId={activeVideo?.youtubeId ?? item.youtubeId} youtubeUrl={activeVideo?.youtubeUrl ?? item.youtubeUrl} title={activeVideo?.title ?? item.title} onView={() => trackView(item.id)} />
+      )}
+      <div className="card-meta"><VisibilityBadge value={item.visibility} /><span>{item.uploadDate}</span><span>{videos.length > 1 ? `${videos.length} คลิป` : `${item.viewCount.toLocaleString()} views`}</span></div>
+      <div className="tag-row">{normalizeCategories(item.categories).map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+      {videos.length > 1 ? (
+        <>
+          <div className="knowledge-playlist-list">
+            {videos.map((video, index) => (
+              <button
+                key={video.id}
+                type="button"
+                className={video.id === resolvedActiveVideoId ? "knowledge-playlist-item active" : "knowledge-playlist-item"}
+                onClick={() => setActiveVideoId(video.id)}
+              >
+                <span className="knowledge-playlist-index">{index + 1}</span>
+                <span className="knowledge-playlist-copy">
+                  <strong>{video.title}</strong>
+                  <small>{video.publishedAt || "วิดีโอใน Playlist"}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <PlaylistLinks videos={videos} />
+        </>
+      ) : isPlaylist && (playlistLoading || playlistFailed) ? null : <p className="multiline">{item.title}</p>}
+      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <a href={activeVideo?.youtubeUrl || item.youtubeUrl || `https://www.youtube.com/watch?v=${item.youtubeId}`} target="_blank" rel="noreferrer">
+          <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>เปิด YouTube</Button>
+        </a>
+        <Button size="sm" variant="ghost" onClick={onToggleBookmark}>
+          {bookmarked ? "ลบบุ๊กมาร์ก" : "บุ๊กมาร์ก"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PlaylistLinks({ videos }: { videos: ReturnType<typeof getKnowledgeVideos> }) {
+  if (videos.length <= 1) return null;
+
+  return (
+    <section className="knowledge-playlist-links">
+      <h3>ลิงก์ทั้งหมดใน Playlist</h3>
+      <div className="knowledge-playlist-link-list">
+        {videos.map((video, index) => (
+          <a
+            key={video.id}
+            className="knowledge-playlist-link-item"
+            href={video.youtubeUrl || `https://www.youtube.com/watch?v=${video.youtubeId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span className="knowledge-playlist-link-index">{index + 1}</span>
+            <span className="knowledge-playlist-link-copy">
+              <strong>{video.title}</strong>
+              <small>{video.youtubeUrl || `https://www.youtube.com/watch?v=${video.youtubeId}`}</small>
+            </span>
+            <ExternalLink size={14} />
+          </a>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function extractYoutubeId(url: string): string {

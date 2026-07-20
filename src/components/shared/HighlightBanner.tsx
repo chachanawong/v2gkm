@@ -19,6 +19,7 @@ export function HighlightBanner({ slides }: { slides: HighlightSlide[] }) {
   const count = slides.length;
   // Clamp during render in case the slide list shrank since the last interaction.
   const current = count ? active % count : 0;
+  const canNavigate = count > 1;
 
   useEffect(() => {
     if (count <= 1 || paused) return;
@@ -62,7 +63,7 @@ export function HighlightBanner({ slides }: { slides: HighlightSlide[] }) {
           );
         })}
       </div>
-      {count > 1 ? (
+      {canNavigate ? (
         <div className="highlight-dots" role="tablist" aria-label="Highlights">
           {slides.map((slide, index) => (
             <button

@@ -3,9 +3,12 @@
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { requestGlobalConfirm, withGlobalLoading } from "@/lib/overlay";
+import { requestGlobalConfirm } from "@/lib/overlay";
 import { Button } from "@/components/ui/Button";
+import { warmUserBootstrap } from "@/lib/prefetch";
+import type { Membership } from "@/lib/types";
 
 type Step = "phone" | "enter-pin" | "set-pin";
 const PHONE_DIGITS = 10;
@@ -38,6 +41,7 @@ function normalizePinInput(value: string) {
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
@@ -60,16 +64,14 @@ export default function LoginPage() {
       return;
     }
     setLoading(true); setError(""); setNotice("");
-    const { res, data } = await withGlobalLoading(async () => {
-      const response = await fetch("/api/auth/user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: normalizePhoneInput(phone) }),
-      });
-      return { res: response, data: await readJsonSafe<{ status?: string; error?: string }>(response) };
-    }, "กำลังตรวจสอบเบอร์โทรศัพท์");
+    const response = await fetch("/api/auth/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: normalizePhoneInput(phone) }),
+    });
+    const data = await readJsonSafe<{ status?: string; error?: string }>(response);
     setLoading(false);
-    if (!res.ok || data?.status === "not_found") {
+    if (!response.ok || data?.status === "not_found") {
       setError(data?.error ?? "ไม่พบเบอร์นี้ในระบบ กรุณาติดต่อผู้ดูแล");
       return;
     }
@@ -85,16 +87,14 @@ export default function LoginPage() {
       return;
     }
     setLoading(true); setError(""); setNotice("");
-    const { res, data } = await withGlobalLoading(async () => {
-      const response = await fetch("/api/auth/user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: normalizePhoneInput(phone), loginPin: normalizePinInput(pin) }),
-      });
-      return { res: response, data: await readJsonSafe<{ user?: object; token?: string; error?: string }>(response) };
-    }, "กำลังเข้าสู่ระบบ");
+    const response = await fetch("/api/auth/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: normalizePhoneInput(phone), loginPin: normalizePinInput(pin) }),
+    });
+    const data = await readJsonSafe<{ user?: { membership?: Membership }; token?: string; error?: string }>(response);
     setLoading(false);
-    if (!res.ok) { setError(data?.error ?? "Login PIN ไม่ถูกต้อง"); return; }
+    if (!response.ok) { setError(data?.error ?? "Login PIN ไม่ถูกต้อง"); return; }
     if (!data?.user || !data.token) {
       setError("ข้อมูล session ไม่ครบ กรุณาลองเข้าสู่ระบบใหม่");
       return;
@@ -102,7 +102,9 @@ export default function LoginPage() {
     localStorage.setItem("v2g_user", JSON.stringify(data.user));
     localStorage.setItem("v2g_user_token", data.token);
     window.dispatchEvent(new Event("v2g-session"));
-    location.href = "/home";
+    router.prefetch("/home");
+    warmUserBootstrap(data.token, data.user.membership ?? "general");
+    router.replace("/home");
   }
 
   async function handleSetPin(e: React.FormEvent) {
@@ -111,16 +113,14 @@ export default function LoginPage() {
     if (pin !== confirmPin) { setError("PIN ทั้งสองไม่ตรงกัน"); return; }
     if (!/^\d{6}$/.test(pin)) { setError("PIN ต้องเป็นตัวเลข 6 หลัก"); return; }
     setLoading(true); setError(""); setNotice("");
-    const { res, data } = await withGlobalLoading(async () => {
-      const response = await fetch("/api/auth/user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: normalizePhoneInput(phone), newPin: normalizePinInput(pin) }),
-      });
-      return { res: response, data: await readJsonSafe<{ user?: object; token?: string; error?: string }>(response) };
-    }, "กำลังบันทึก PIN");
+    const response = await fetch("/api/auth/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: normalizePhoneInput(phone), newPin: normalizePinInput(pin) }),
+    });
+    const data = await readJsonSafe<{ user?: { membership?: Membership }; token?: string; error?: string }>(response);
     setLoading(false);
-    if (!res.ok) { setError(data?.error ?? "เกิดข้อผิดพลาด"); return; }
+    if (!response.ok) { setError(data?.error ?? "เกิดข้อผิดพลาด"); return; }
     if (!data?.user || !data.token) {
       setError("ข้อมูล session ไม่ครบ กรุณาลองเข้าสู่ระบบใหม่");
       return;
@@ -128,7 +128,9 @@ export default function LoginPage() {
     localStorage.setItem("v2g_user", JSON.stringify(data.user));
     localStorage.setItem("v2g_user_token", data.token);
     window.dispatchEvent(new Event("v2g-session"));
-    location.href = "/home";
+    router.prefetch("/home");
+    warmUserBootstrap(data.token, data.user.membership ?? "general");
+    router.replace("/home");
   }
 
   async function handleRequestReset() {
@@ -141,16 +143,14 @@ export default function LoginPage() {
     });
     if (!confirmed) return;
     setLoading(true); setError(""); setNotice("");
-    const { res, data } = await withGlobalLoading(async () => {
-      const response = await fetch("/api/auth/user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: normalizePhoneInput(phone), requestReset: true }),
-      });
-      return { res: response, data: await readJsonSafe<{ success?: boolean; message?: string; error?: string }>(response) };
-    }, "กำลังส่งคำขอรีเซ็ต PIN");
+    const response = await fetch("/api/auth/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: normalizePhoneInput(phone), requestReset: true }),
+    });
+    const data = await readJsonSafe<{ success?: boolean; message?: string; error?: string }>(response);
     setLoading(false);
-    if (!res.ok) {
+    if (!response.ok) {
       setError(data?.error ?? "ส่งคำขอรีเซ็ต PIN ไม่สำเร็จ");
       return;
     }
@@ -178,7 +178,7 @@ export default function LoginPage() {
                 <h1 className="section-title">User Login</h1>
                 <p className="muted">เข้าสู่ระบบด้วยเบอร์โทรศัพท์</p>
               </div>
-              <form className="stack" onSubmit={handlePhoneSubmit}>
+              <form className="stack" data-global-loading="off" onSubmit={handlePhoneSubmit}>
                 <label className="field">
                   <span>เบอร์โทรศัพท์</span>
                   <input
@@ -209,7 +209,7 @@ export default function LoginPage() {
                 <h1 className="section-title">ใส่ Login PIN</h1>
                 <p className="muted">เบอร์ {formatPhoneGuide(phone)}</p>
               </div>
-              <form className="stack" onSubmit={handleEnterPin}>
+              <form className="stack" data-global-loading="off" onSubmit={handleEnterPin}>
                 <label className="field">
                   <span>Login PIN</span>
                   <div className="password-field">
@@ -250,7 +250,7 @@ export default function LoginPage() {
                 <h1 className="section-title">ตั้ง Login PIN</h1>
                 <p className="muted">เบอร์ {formatPhoneGuide(phone)} — ยังไม่มี PIN กรุณาตั้งค่า</p>
               </div>
-              <form className="stack" onSubmit={handleSetPin}>
+              <form className="stack" data-global-loading="off" onSubmit={handleSetPin}>
                 <label className="field">
                   <span>Login PIN ใหม่ (6 หลัก)</span>
                   <div className="password-field">

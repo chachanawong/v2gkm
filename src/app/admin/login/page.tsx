@@ -3,8 +3,8 @@
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { withGlobalLoading } from "@/lib/overlay";
 import { Button } from "@/components/ui/Button";
 
 async function readJsonSafe<T>(response: Response): Promise<T | null> {
@@ -18,6 +18,7 @@ async function readJsonSafe<T>(response: Response): Promise<T | null> {
 }
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -28,17 +29,12 @@ export default function AdminLoginPage() {
     if (loading) return;
     setLoading(true);
     setError("");
-    const { response, data } = await withGlobalLoading(async () => {
-      const nextResponse = await fetch("/api/auth/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      return {
-        response: nextResponse,
-        data: await readJsonSafe<{ admin?: object; token?: string; error?: string }>(nextResponse),
-      };
-    }, "กำลังเข้าสู่ระบบผู้ดูแล");
+    const response = await fetch("/api/auth/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await readJsonSafe<{ admin?: object; token?: string; error?: string }>(response);
     setLoading(false);
     if (!response.ok) {
       setError(data?.error ?? "Login failed");
@@ -51,7 +47,8 @@ export default function AdminLoginPage() {
     localStorage.setItem("v2g_admin", JSON.stringify(data.admin));
     localStorage.setItem("v2g_admin_token", data.token);
     window.dispatchEvent(new Event("v2g-session"));
-    location.href = "/admin/dashboard";
+    router.prefetch("/admin/dashboard");
+    router.replace("/admin/dashboard");
   }
 
   return (

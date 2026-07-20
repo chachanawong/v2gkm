@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import type { Admin, AdminRole, Membership, User } from "./types";
+import { clearBootstrapCache } from "./bootstrap-cache";
 
 let lastUserRaw: string | null = null;
 let lastUser: User | null = null;
@@ -40,6 +41,16 @@ export function getStoredMembership(): Membership {
   return getStoredUser()?.membership ?? "general";
 }
 
+function subscribe(callback: () => void) {
+  if (typeof window === "undefined") return () => undefined;
+  window.addEventListener("storage", callback);
+  window.addEventListener("v2g-session", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("v2g-session", callback);
+  };
+}
+
 export function getUserToken() {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem("v2g_user_token");
@@ -55,49 +66,29 @@ export function isAdminRole(role?: string): role is AdminRole {
 }
 
 export function useStoredUser() {
-  const [user, setUser] = useState<User | null | undefined>(undefined);
-  useEffect(() => {
-    const sync = () => setUser(getStoredUser());
-    const ready = window.setTimeout(sync, 0);
-    window.addEventListener("storage", sync);
-    window.addEventListener("v2g-session", sync);
-    return () => {
-      window.clearTimeout(ready);
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("v2g-session", sync);
-    };
-  }, []);
-  return user;
+  return useSyncExternalStore(subscribe, getStoredUser, () => undefined);
 }
 
 export function useStoredAdmin() {
-  const [admin, setAdmin] = useState<Omit<Admin, "password"> | null | undefined>(undefined);
-  useEffect(() => {
-    const sync = () => setAdmin(getStoredAdmin());
-    const ready = window.setTimeout(sync, 0);
-    window.addEventListener("storage", sync);
-    window.addEventListener("v2g-session", sync);
-    return () => {
-      window.clearTimeout(ready);
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("v2g-session", sync);
-    };
-  }, []);
-  return admin;
+  return useSyncExternalStore(subscribe, getStoredAdmin, () => undefined);
 }
 
 export function useStoredMembership() {
-  const [membership, setMembership] = useState<Membership | undefined>(undefined);
-  useEffect(() => {
-    const sync = () => setMembership(getStoredMembership());
-    const ready = window.setTimeout(sync, 0);
-    window.addEventListener("storage", sync);
-    window.addEventListener("v2g-session", sync);
-    return () => {
-      window.clearTimeout(ready);
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("v2g-session", sync);
-    };
-  }, []);
-  return membership;
+  return useSyncExternalStore(subscribe, getStoredMembership, () => undefined);
+}
+
+export function clearUserSession() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("v2g_user");
+  window.localStorage.removeItem("v2g_user_token");
+  clearBootstrapCache("user:");
+  window.dispatchEvent(new Event("v2g-session"));
+}
+
+export function clearAdminSession() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("v2g_admin");
+  window.localStorage.removeItem("v2g_admin_token");
+  clearBootstrapCache("admin:");
+  window.dispatchEvent(new Event("v2g-session"));
 }

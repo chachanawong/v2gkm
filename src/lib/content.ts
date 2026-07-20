@@ -1,9 +1,10 @@
+import { cache } from "react";
 import { batchListSheets, listSheet } from "./google-sheets";
 import { applyPublishWindow } from "./publish";
 import { visiblePublished } from "./visibility";
 import type { Knowledge, Membership, News, Profile } from "./types";
 
-export async function getUserContent(membership: Membership) {
+export const getUserContent = cache(async (membership: Membership) => {
   const data = await batchListSheets(["knowledge", "news", "profiles", "categories"]);
   return {
     knowledge: visiblePublished((data.knowledge as Knowledge[]).map((item) => applyPublishWindow(item)), membership),
@@ -11,7 +12,7 @@ export async function getUserContent(membership: Membership) {
     profiles: visiblePublished((data.profiles as Profile[]).map((item) => applyPublishWindow(item)), membership),
     categories: data.categories,
   };
-}
+});
 
 export async function findContent(type: "knowledge" | "news" | "profiles", id: string) {
   const list = await listSheet(type);

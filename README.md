@@ -30,6 +30,7 @@ YOUTUBE_API_KEY="optional-youtube-data-api-key"
 GOOGLE_DRIVE_CLIENT_ID="oauth-client-id"
 GOOGLE_DRIVE_CLIENT_SECRET="oauth-client-secret"
 GOOGLE_DRIVE_REFRESH_TOKEN="oauth-refresh-token"
+GOOGLE_DRIVE_FOLDER_ID="1BqH_MyH4KfETRIu2shLMwN70Tu5IK2-P"
 ```
 
 If `GOOGLE_SCRIPT_URL` is set, the app will use that Apps Script deployment.
@@ -37,7 +38,7 @@ Otherwise it falls back to the default deployment in the repo: `https://script.g
 Keep `GOOGLE_SCRIPT_SECRET` in env so the shared secret does not live in the repo.
 If these variables are missing, the app uses mock data from `src/lib/mock-data.ts` so local development still works.
 `YOUTUBE_API_KEY` is optional, but required when you want upload date and view count to come from the real YouTube Data API instead of stored values.
-Admin uploads are hard-wired to Google Drive folder `1by5EUSXxgd39h1sN6CTXesfg77XYqMxk`. If Drive OAuth env is missing, uploads fall back to `public/uploads` for local development only.
+Admin uploads default to Google Drive folder `1BqH_MyH4KfETRIu2shLMwN70Tu5IK2-P` (`Poster Image`). You can override it with `GOOGLE_DRIVE_FOLDER_ID`. If Drive OAuth env is missing, uploads fall back to `public/uploads` for local development only.
 
 Optional direct Google Sheets fallback:
 

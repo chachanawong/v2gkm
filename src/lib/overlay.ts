@@ -17,8 +17,18 @@ type ConfirmDetail = ConfirmOptions & {
   id: number;
 };
 
+type SuccessOptions = {
+  title: string;
+  detail?: string;
+};
+
+type SuccessDetail = SuccessOptions & {
+  id: number;
+};
+
 let nextLoadingId = 1;
 let nextConfirmId = 1;
+let nextSuccessId = 1;
 
 export function showGlobalLoading(message?: string) {
   if (typeof window === "undefined") return null;
@@ -62,4 +72,13 @@ export function requestGlobalConfirm(options: ConfirmOptions): Promise<boolean> 
       detail: { id, ...options },
     }));
   });
+}
+
+export function showGlobalSuccess(options: SuccessOptions) {
+  if (typeof window === "undefined") return null;
+  const id = nextSuccessId++;
+  window.dispatchEvent(new CustomEvent<SuccessDetail>("v2g:success-show", {
+    detail: { id, ...options },
+  }));
+  return id;
 }

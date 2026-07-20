@@ -42,12 +42,24 @@ export type Knowledge = PublishFields & {
   title: string;
   youtubeUrl: string;
   youtubeId: string;
+  playlistId?: string;
+  playlistItems?: KnowledgePlaylistItem[];
   thumbnail: string;
   categories: string[];
   uploadDate: string;
   viewCount: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type KnowledgePlaylistItem = {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  youtubeId: string;
+  thumbnail: string;
+  position: number;
+  publishedAt?: string;
 };
 
 export type News = PublishFields & {

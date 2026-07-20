@@ -1,6 +1,10 @@
 import { getGoogleScriptUrl } from "./google-script";
 import type { PinResetRequest } from "./types";
 
+const cacheTtl = 300_000;
+let requestCache: { rows: PinResetRequest[]; expiresAt: number } | null = null;
+let pendingRequest: Promise<PinResetRequest[]> | null = null;
+
 function requireSecret() {
   const secret = process.env.GOOGLE_SCRIPT_SECRET;
   if (!secret) {
@@ -70,8 +74,18 @@ async function scriptPost<T>(body: Record<string, unknown>) {
 }
 
 export async function listPinResetRequests() {
-  const rows = await scriptGet<Record<string, unknown>[]>({ sheet: "pin_reset_requests" });
-  return rows.map(normalizePinResetRequest);
+  if (requestCache && requestCache.expiresAt > Date.now()) return requestCache.rows;
+  if (pendingRequest) return pendingRequest;
+  pendingRequest = scriptGet<Record<string, unknown>[]>({ sheet: "pin_reset_requests" })
+    .then((rows) => {
+      const normalized = rows.map(normalizePinResetRequest);
+      requestCache = { rows: normalized, expiresAt: Date.now() + cacheTtl };
+      return normalized;
+    })
+    .finally(() => {
+      pendingRequest = null;
+    });
+  return pendingRequest;
 }
 
 export async function listPendingPinResetRequests() {
@@ -87,5 +101,11 @@ export async function upsertPinResetRequest(item: PinResetRequest) {
     sheet: "pin_reset_requests",
     item,
   });
+  clearPinResetRequestCache();
   return item;
+}
+
+export function clearPinResetRequestCache() {
+  requestCache = null;
+  pendingRequest = null;
 }

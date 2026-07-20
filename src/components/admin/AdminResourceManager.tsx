@@ -1,14 +1,14 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { CheckCircle2, Eye, Loader2, Pencil, Plus, Send, Trash2 } from "lucide-react";
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { Eye, Loader2, Pencil, Plus, Send, Trash2 } from "lucide-react";
+import type { FormEvent } from "react";
 import { useId, useMemo, useRef, useState } from "react";
 import { normalizeCategoryType } from "@/lib/category-settings";
 import { getAdminToken, getStoredAdmin, isAdminRole } from "@/lib/client-session";
 import { maskPhone } from "@/lib/format";
 import { getPrimaryImage, normalizeCategories, normalizeImageUrl, normalizeImages } from "@/lib/normalize";
-import { requestGlobalConfirm, withGlobalLoading } from "@/lib/overlay";
+import { requestGlobalConfirm, showGlobalSuccess, withGlobalLoading } from "@/lib/overlay";
 import { applyPublishWindow, computeContentStatus, splitByStatus, validatePublishWindow } from "@/lib/publish";
 import type { AdminRole, PublishFields } from "@/lib/types";
 import { Badge } from "@/components/ui/Badge";
@@ -72,7 +72,6 @@ export function AdminResourceManager({
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [successOverlay, setSuccessOverlay] = useState<{ title: string; detail: string } | null>(null);
   const formId = useId();
   const formRef = useRef<HTMLFormElement | null>(null);
   const admin = getStoredAdmin();
@@ -119,7 +118,10 @@ export function AdminResourceManager({
       const exists = current.some((item) => item.id === data.item.id);
       return exists ? current.map((item) => (item.id === data.item.id ? data.item : item)) : [data.item, ...current];
     });
-    showSaveSuccessOverlay(resource, data.item, isCreate, setSuccessOverlay);
+    showGlobalSuccess({
+      title: `${isCreate ? "สร้าง" : "บันทึก"} ${title} สำเร็จ`,
+      detail: String(data.item.title ?? data.item.name ?? data.item.email ?? data.item.phone ?? data.item.id ?? "ดำเนินการเรียบร้อย"),
+    });
     if (closeAfterSave) setActive(null);
     else setActive(data.item);
     return data.item as Item;
@@ -256,6 +258,10 @@ export function AdminResourceManager({
     }), `กำลังลบ ${title}`);
     if (response.ok) {
       setRows((current) => current.filter((item) => item.id !== target.id));
+      showGlobalSuccess({
+        title: `ลบ ${title} สำเร็จ`,
+        detail: String(target.title ?? target.name ?? target.email ?? target.phone ?? target.id ?? "ดำเนินการเรียบร้อย"),
+      });
     }
   }
 
@@ -299,15 +305,6 @@ export function AdminResourceManager({
 
   return (
     <section className="admin-section">
-      {successOverlay ? (
-        <div className="success-overlay" aria-live="polite" role="status">
-          <div className="success-card">
-            <CheckCircle2 size={30} />
-            <strong>{successOverlay.title}</strong>
-            <small>{successOverlay.detail}</small>
-          </div>
-        </div>
-      ) : null}
       <div className="section-head">
         <div>
           {eyebrowText ? <p className="eyebrow">{eyebrowText}</p> : null}
@@ -912,22 +909,4 @@ function buildLineMessage(resource: string, item: Item) {
   }
 
   return String(item.title ?? item.name ?? "");
-}
-
-function showSaveSuccessOverlay(
-  resource: string,
-  item: Item,
-  isCreate: boolean,
-  setSuccessOverlay: Dispatch<SetStateAction<{ title: string; detail: string } | null>>,
-) {
-  if (resource !== "news" && resource !== "profiles") return;
-
-  const title = resource === "news"
-    ? (isCreate ? "เพิ่ม News สำเร็จ" : "บันทึก News สำเร็จ")
-    : (isCreate ? "เพิ่ม Profile สำเร็จ" : "บันทึก Profile สำเร็จ");
-  const detail = String(item.title ?? item.name ?? "บันทึกข้อมูลเรียบร้อย");
-  setSuccessOverlay({ title, detail });
-  window.setTimeout(() => {
-    setSuccessOverlay((current) => (current?.detail === detail ? null : current));
-  }, 2200);
 }

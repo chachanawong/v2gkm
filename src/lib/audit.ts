@@ -1,3 +1,4 @@
+import { clearAdminDashboardCache } from "./admin-dashboard";
 import { upsertSheet } from "./google-sheets";
 import type { AuditLog } from "./types";
 
@@ -9,6 +10,7 @@ export async function writeAuditLog(input: Omit<AuditLog, "id" | "at">) {
   };
   try {
     await upsertSheet("audit_logs", log);
+    clearAdminDashboardCache();
   } catch (error) {
     console.error("[audit] failed to persist audit log:", error);
   }

@@ -1,5 +1,5 @@
 const driveScope = "https://www.googleapis.com/auth/drive";
-const adminUploadDriveFolderId = "1by5EUSXxgd39h1sN6CTXesfg77XYqMxk";
+const defaultAdminUploadDriveFolderId = "1BqH_MyH4KfETRIu2shLMwN70Tu5IK2-P";
 
 export type UploadedImage = {
   id?: string;
@@ -16,7 +16,7 @@ let cachedDriveToken: { token: string; expiresAt: number } | null = null;
 
 export function hasDriveConfig() {
   return Boolean(
-    adminUploadDriveFolderId
+    getDriveFolderId()
       && process.env.GOOGLE_DRIVE_CLIENT_ID
       && process.env.GOOGLE_DRIVE_CLIENT_SECRET
       && process.env.GOOGLE_DRIVE_REFRESH_TOKEN,
@@ -24,7 +24,7 @@ export function hasDriveConfig() {
 }
 
 export function getDriveFolderId() {
-  return adminUploadDriveFolderId;
+  return process.env.GOOGLE_DRIVE_FOLDER_ID || defaultAdminUploadDriveFolderId;
 }
 
 export async function uploadImageToDrive({

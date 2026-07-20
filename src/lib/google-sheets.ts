@@ -4,7 +4,7 @@ import { db } from "./mock-data";
 import { normalizeCategories, normalizeDateOnly, normalizeImages } from "./normalize";
 import { applyPublishWindow } from "./publish";
 import { normalizeMembership } from "./visibility";
-import type { Admin, AuditLog, Category, Event, EventRegistration, Knowledge, Lesson, LearningPath, News, PinResetRequest, PreviewToken, Profile, ResourceType, User, UserProgress } from "./types";
+import type { Admin, AuditLog, Category, Event, EventRegistration, Knowledge, KnowledgePlaylistItem, Lesson, LearningPath, News, PinResetRequest, PreviewToken, Profile, ResourceType, User, UserProgress } from "./types";
 
 type SheetMap = {
   users: User;
@@ -28,7 +28,7 @@ type SheetName = keyof SheetMap;
 const sheetHeaders: Record<SheetName, string[]> = {
   users: ["id", "name", "phone", "membership", "uplinePlatinum", "active", "loginPin"],
   admins: ["id", "name", "email", "role", "password", "active"],
-  knowledge: ["id", "title", "youtubeUrl", "youtubeId", "thumbnail", "categories", "uploadDate", "viewCount", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt"],
+  knowledge: ["id", "title", "youtubeUrl", "youtubeId", "playlistId", "playlistItems", "thumbnail", "categories", "uploadDate", "viewCount", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt"],
   profiles: ["id", "pin", "name", "bio", "position", "visibility", "images", "status", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories"],
   news: ["id", "title", "body", "eventDate", "eventTime", "eventChannel", "images", "status", "visibility", "publishTime", "publishUntil", "createdAt", "updatedAt", "categories", "pinned"],
   categories: ["id", "name", "active", "type"],
@@ -56,7 +56,8 @@ const resourceToSheet: Record<ResourceType, SheetName> = {
 
 const sheetsScope = "https://www.googleapis.com/auth/spreadsheets";
 const readCache = new Map<SheetName, { rows: unknown[]; expiresAt: number }>();
-const readTtl = 15_000;
+const inflightReads = new Map<SheetName, Promise<unknown[]>>();
+const readTtl = 300_000;
 
 function getPrimarySpreadsheetId() {
   return process.env.GOOGLE_SHEETS_ID || "";
@@ -187,6 +188,10 @@ function normalizeSheetItem(item: Record<string, unknown>) {
     item.uploadDate = normalizeDateOnly(item.uploadDate);
   }
 
+  if ("playlistItems" in item) {
+    item.playlistItems = normalizePlaylistItems(item.playlistItems);
+  }
+
   if ("id" in item && "createdAt" in item && !item.createdAt) {
     item.createdAt = String(item.id ?? "");
   }
@@ -196,6 +201,28 @@ function normalizeSheetItem(item: Record<string, unknown>) {
   }
 
   return item;
+}
+
+function normalizePlaylistItems(value: unknown): KnowledgePlaylistItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== "object") return null;
+      const record = item as Record<string, unknown>;
+      const youtubeId = String(record.youtubeId ?? "").trim();
+      const title = String(record.title ?? "").trim();
+      if (!youtubeId || !title) return null;
+      return {
+        id: String(record.id ?? `${youtubeId}-${index}`),
+        title,
+        youtubeUrl: String(record.youtubeUrl ?? `https://www.youtube.com/watch?v=${youtubeId}`),
+        youtubeId,
+        thumbnail: String(record.thumbnail ?? ""),
+        position: Number(record.position ?? index),
+        publishedAt: normalizeDateOnly(record.publishedAt),
+      } satisfies KnowledgePlaylistItem;
+    })
+    .filter((item): item is KnowledgePlaylistItem => Boolean(item));
 }
 
 function mockList<T extends SheetName>(sheet: T): SheetMap[T][] {
@@ -256,30 +283,56 @@ function normalizeScriptRows<T extends SheetName>(sheet: T, rows: Record<string,
 export async function listSheet<T extends SheetName>(sheet: T, options?: { fresh?: boolean }): Promise<SheetMap[T][]> {
   const cached = options?.fresh ? null : readCache.get(sheet);
   if (cached && cached.expiresAt > Date.now()) return cached.rows as SheetMap[T][];
-  if (hasScriptConfig()) {
-    const rows = await scriptGet<Record<string, unknown>[]>({ sheet });
-    const objects = normalizeScriptRows(sheet, rows);
-    if (!options?.fresh) {
-      readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
-    }
-    return objects;
+  if (!options?.fresh) {
+    const pending = inflightReads.get(sheet);
+    if (pending) return pending as Promise<SheetMap[T][]>;
   }
-  if (hasSheetsConfig()) {
-    const response = await sheetsRequest<{ values?: string[][] }>(valuesPath(`${sheet}!A2:Z`));
-    const rows = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], response.values);
-    if (!options?.fresh) {
-      readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
+
+  const request = (async () => {
+    if (hasScriptConfig()) {
+      const rows = await scriptGet<Record<string, unknown>[]>({ sheet });
+      const objects = normalizeScriptRows(sheet, rows);
+      if (!options?.fresh) {
+        readCache.set(sheet, { rows: objects, expiresAt: Date.now() + readTtl });
+      }
+      return objects as SheetMap[T][];
     }
-    return rows;
+    if (hasSheetsConfig()) {
+      const response = await sheetsRequest<{ values?: string[][] }>(valuesPath(`${sheet}!A2:Z`));
+      const rows = rowsToObjects<SheetMap[T]>(sheetHeaders[sheet], response.values);
+      if (!options?.fresh) {
+        readCache.set(sheet, { rows, expiresAt: Date.now() + readTtl });
+      }
+      return rows;
+    }
+    return mockList(sheet);
+  })();
+
+  if (!options?.fresh) {
+    inflightReads.set(sheet, request as Promise<unknown[]>);
+    request.finally(() => inflightReads.delete(sheet)).catch(() => undefined);
   }
-  return mockList(sheet);
+
+  return request;
 }
 
 export async function batchListSheets<T extends SheetName>(sheets: T[], options?: { fresh?: boolean }): Promise<Record<T, SheetMap[T][]>> {
+  const uniqueSheets = sheets.filter((sheet, index) => sheets.indexOf(sheet) === index);
+  if (!options?.fresh) {
+    const allCached = uniqueSheets.every((sheet) => {
+      const cached = readCache.get(sheet);
+      return Boolean(cached && cached.expiresAt > Date.now());
+    });
+    if (allCached) {
+      return sheets.reduce((acc, sheet) => {
+        acc[sheet] = (readCache.get(sheet)?.rows ?? []) as SheetMap[T][];
+        return acc;
+      }, {} as Record<T, SheetMap[T][]>);
+    }
+  }
   if (hasScriptConfig()) {
-    const querySheets = sheets.filter((sheet, index) => sheets.indexOf(sheet) === index);
-    const scriptResult = querySheets.length > 0
-      ? await scriptGet<Record<string, Record<string, unknown>[]>>({ sheets: querySheets.join(",") })
+    const scriptResult = uniqueSheets.length > 0
+      ? await scriptGet<Record<string, Record<string, unknown>[]>>({ sheets: uniqueSheets.join(",") })
       : ({} as Record<string, Record<string, unknown>[]>);
     return sheets.reduce((acc, sheet) => {
       const objects = normalizeScriptRows(sheet, scriptResult[sheet] ?? []);

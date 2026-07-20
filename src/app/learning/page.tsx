@@ -5,27 +5,33 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shared/AppShell";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { getBootstrapCache, setBootstrapCache } from "@/lib/bootstrap-cache";
 import { getStoredUser, getUserToken } from "@/lib/client-session";
 import { useProgress } from "@/lib/useProgress";
 import type { Lesson, LearningPath } from "@/lib/types";
 
 export default function LearningPage() {
-  const [paths, setPaths] = useState<LearningPath[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [loading, setLoading] = useState(true);
+  const token = getUserToken();
+  const cached = getBootstrapCache<{ paths: LearningPath[]; lessons: Lesson[] }>(`user:learning:${token ?? "guest"}`);
+  const [paths, setPaths] = useState<LearningPath[]>(() => cached?.paths ?? []);
+  const [lessons, setLessons] = useState<Lesson[]>(() => cached?.lessons ?? []);
+  const [loading, setLoading] = useState(paths.length === 0);
   const user = getStoredUser();
   const { pathProgress } = useProgress(user?.id ?? "");
 
   useEffect(() => {
-    fetch("/api/learning", { headers: getUserToken() ? { Authorization: `Bearer ${getUserToken()}` } : {} })
+    fetch("/api/learning", { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then((r) => r.json())
       .then((d) => {
-        setPaths(Array.isArray(d.paths) ? d.paths : []);
-        setLessons(Array.isArray(d.lessons) ? d.lessons : []);
+        const nextPaths = Array.isArray(d.paths) ? d.paths : [];
+        const nextLessons = Array.isArray(d.lessons) ? d.lessons : [];
+        setPaths(nextPaths);
+        setLessons(nextLessons);
+        setBootstrapCache(`user:learning:${token ?? "guest"}`, { paths: nextPaths, lessons: nextLessons }, 300_000);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [token]);
 
   return (
     <AppShell>
@@ -44,14 +50,14 @@ export default function LearningPage() {
           const prog = pathProgress(path.id, pathLessons.length);
           return (
             <Link key={path.id} href={`/learning/${path.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-              <article className="content-card" style={{ flexDirection: "row", display: "flex", alignItems: "stretch" }}>
+              <article className="content-card learning-list-card">
                 {path.thumbnail ? (
-                  <div className="card-image" style={{ width: 160, flexShrink: 0, aspectRatio: "unset" }}>
+                  <div className="card-image learning-list-card-image">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={path.thumbnail} alt={path.title} />
                   </div>
                 ) : null}
-                <div className="card-body" style={{ flex: 1 }}>
+                <div className="card-body learning-list-card-body">
                   <h3>{path.title}</h3>
                   <div className="card-meta">
                     <Badge tone={path.visibility === "platinum" ? "dark" : path.visibility === "silver" ? "neutral" : "neutral"}>{path.visibility}</Badge>

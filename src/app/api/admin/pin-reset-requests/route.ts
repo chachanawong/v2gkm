@@ -1,8 +1,8 @@
+import { clearAdminDashboardCache } from "@/lib/admin-dashboard";
 import { writeAuditLog } from "@/lib/audit";
 import { assertAdminRequest, getAdminSession } from "@/lib/auth";
 import { clearBoMemberLoginPin } from "@/lib/bo-members";
 import { listPendingPinResetRequests, listPinResetRequests, upsertPinResetRequest } from "@/lib/pin-reset-requests";
-import type { PinResetRequest } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
   }
 
   await upsertPinResetRequest(next);
+  clearAdminDashboardCache();
   await writeAuditLog({
     actor: request.headers.get("x-admin-name") ?? session?.role ?? "admin",
     role: "admin",

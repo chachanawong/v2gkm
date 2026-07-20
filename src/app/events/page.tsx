@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getStoredUser, getUserToken } from "@/lib/client-session";
+import { getBootstrapCache, setBootstrapCache } from "@/lib/bootstrap-cache";
 import { useLocalStorageSet } from "@/lib/useLocalStorage";
 import type { Event } from "@/lib/types";
 
@@ -34,8 +35,9 @@ function isUpcoming(event: Event) {
 }
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const token = getUserToken();
+  const [events, setEvents] = useState<Event[]>(() => getBootstrapCache<Event[]>(`user:events:${token ?? "guest"}`) ?? []);
+  const [loading, setLoading] = useState(events.length === 0);
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
   const [typeFilter, setTypeFilter] = useState("all");
   const [selected, setSelected] = useState<Event | null>(null);
@@ -45,11 +47,16 @@ export default function EventsPage() {
   const user = getStoredUser();
 
   useEffect(() => {
-    fetch("/api/events", { headers: getUserToken() ? { Authorization: `Bearer ${getUserToken()}` } : {} })
+    fetch("/api/events", { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then((r) => r.json())
-      .then((d) => { setEvents(Array.isArray(d.items) ? d.items : []); setLoading(false); })
+      .then((d) => {
+        const nextItems = Array.isArray(d.items) ? d.items : [];
+        setEvents(nextItems);
+        setBootstrapCache(`user:events:${token ?? "guest"}`, nextItems, 300_000);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
-  }, []);
+  }, [token]);
 
   const filtered = useMemo(() => {
     return events

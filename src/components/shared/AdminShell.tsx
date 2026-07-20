@@ -20,7 +20,7 @@ export function AdminShell({ children, allowed }: { children: ReactNode; allowed
     }
   }, [admin, denied, role]);
 
-  if (!admin) return <div className="page-shell"><div className="loading-overlay">Loading...</div></div>;
+  if (!admin) return null;
   if (denied) return <div className="page-shell"><TopNav admin role={role} /><main className="content-wrap compact"><p className="form-error">Permission denied</p></main></div>;
   return (
     <div className="page-shell admin-shell">

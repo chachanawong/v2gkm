@@ -1,11 +1,12 @@
 import { assertAdminRequest, getAdminSession, normalizeAdminRole } from "@/lib/auth";
+import { clearAdminDashboardCache } from "@/lib/admin-dashboard";
 import { normalizeCategoryType } from "@/lib/category-settings";
 import { deleteResource, listResource, upsertResource } from "@/lib/google-sheets";
 import { writeAuditLog } from "@/lib/audit";
 import { normalizeDateOnly } from "@/lib/normalize";
 import { applyPublishWindow, computeContentStatus, validatePublishWindow } from "@/lib/publish";
 import type { ResourceType } from "@/lib/types";
-import { getYouTubeId, getYouTubeThumbnail } from "@/lib/youtube";
+import { getYouTubeId, getYouTubePlaylistId, getYouTubePlaylistItems, getYouTubeThumbnail } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -46,6 +47,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ res
     return Response.json({ error: error instanceof Error ? error.message : "Invalid content" }, { status: 400 });
   }
   const saved = await upsertResource(resource, item);
+  clearAdminDashboardCache();
   await writeAuditLog({
     actor: request.headers.get("x-admin-name") ?? session?.role ?? "admin",
     role: "admin",
@@ -64,6 +66,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ r
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
   const deleted = await deleteResource(resource, id);
+  clearAdminDashboardCache();
   await writeAuditLog({ actor: request.headers.get("x-admin-name") ?? session?.role ?? "admin", role: "admin", action: "delete", resource: `${resource}:${id}` });
   return Response.json({ deleted });
 }
@@ -78,8 +81,20 @@ async function normalizeAdminPayload(resource: ResourceType, item: Record<string
   };
   if (resource === "knowledge") {
     const youtubeUrl = String(next.youtubeUrl ?? "");
-    next.youtubeId = String(next.youtubeId || getYouTubeId(youtubeUrl));
-    next.thumbnail = next.thumbnail || getYouTubeThumbnail(youtubeUrl);
+    const playlistId = getYouTubePlaylistId(youtubeUrl);
+    next.playlistId = playlistId || "";
+    if (playlistId) {
+      const playlist = await getYouTubePlaylistItems(youtubeUrl);
+      next.playlistItems = playlist.items;
+      const firstItem = playlist.items[0];
+      next.youtubeId = firstItem?.youtubeId ?? "";
+      next.thumbnail = next.thumbnail || firstItem?.thumbnail || getYouTubeThumbnail(youtubeUrl);
+      next.uploadDate = normalizeDateOnly(next.uploadDate || firstItem?.publishedAt || now);
+    } else {
+      next.youtubeId = String(next.youtubeId || getYouTubeId(youtubeUrl));
+      next.playlistItems = [];
+      next.thumbnail = next.thumbnail || getYouTubeThumbnail(youtubeUrl);
+    }
     next.viewCount = Number(next.viewCount ?? 0);
     next.uploadDate = normalizeDateOnly(next.uploadDate || now);
   }

@@ -15,7 +15,7 @@ export default async function AdminKnowledgePage() {
         items={data.knowledge}
         fields={[
           { key: "title", label: "Title" },
-          { key: "youtubeUrl", label: "YouTube URL" },
+          { key: "youtubeUrl", label: "YouTube / Playlist URL" },
           { key: "categories", label: "Category Tags", options: categoryOptions },
           { key: "visibility", label: "Visibility", type: "select" },
         ]}

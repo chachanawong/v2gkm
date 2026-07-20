@@ -1,6 +1,6 @@
 import { getGoogleScriptUrl } from "./google-script";
 import type { Membership, User } from "./types";
-const cacheTtl = 30_000;
+const cacheTtl = 300_000;
 
 type BoMemberRecord = {
   id: string;
@@ -37,6 +37,8 @@ type BoPaymentRecord = {
 
 let cache: { rows: BoMemberRecord[]; expiresAt: number } | null = null;
 let paymentCache = new Map<string, { rows: BoPaymentRecord[]; expiresAt: number }>();
+let membersRequest: Promise<BoMemberRecord[]> | null = null;
+let paymentRequests = new Map<string, Promise<BoPaymentRecord[]>>();
 
 const membershipRank: Record<Membership, number> = {
   general: 1,
@@ -156,7 +158,16 @@ async function scriptPost<T>(body: Record<string, unknown>): Promise<T> {
 
 export async function listBoMembers(): Promise<BoMemberRecord[]> {
   if (cache && cache.expiresAt > Date.now()) return cache.rows;
-  const rows = await scriptGet<BoMemberRecord[]>({ sheet: "bo_members" });
+  if (membersRequest) return membersRequest;
+  membersRequest = scriptGet<BoMemberRecord[]>({ sheet: "bo_members" })
+    .then((rows) => {
+      cache = { rows, expiresAt: Date.now() + cacheTtl };
+      return rows;
+    })
+    .finally(() => {
+      membersRequest = null;
+    });
+  const rows = await membersRequest;
   cache = { rows, expiresAt: Date.now() + cacheTtl };
   return rows;
 }
@@ -296,7 +307,9 @@ export async function clearBoMemberLoginPin(phone: string) {
 
 export function clearBoMembersCache() {
   cache = null;
+  membersRequest = null;
   paymentCache = new Map<string, { rows: BoPaymentRecord[]; expiresAt: number }>();
+  paymentRequests = new Map<string, Promise<BoPaymentRecord[]>>();
 }
 
 export async function listBoPaymentsByPhone(phone: string): Promise<BoPaymentRecord[]> {
@@ -305,18 +318,25 @@ export async function listBoPaymentsByPhone(phone: string): Promise<BoPaymentRec
 
   const cached = paymentCache.get(normalizedPhone);
   if (cached && cached.expiresAt > Date.now()) return cached.rows;
+  const pending = paymentRequests.get(normalizedPhone);
+  if (pending) return pending;
 
-  const data = await scriptGet<{ payments?: BoPaymentRecord[] }>({
+  const request = scriptGet<{ payments?: BoPaymentRecord[] }>({
     action: "businessData",
     include: "payments",
     phone: normalizedPhone,
     fullRead: "false",
-  });
-
-  const rows = Array.isArray(data.payments)
-    ? data.payments.filter((row) => normalizeSheetPhone(row.phone) === normalizedPhone)
-    : [];
-
-  paymentCache.set(normalizedPhone, { rows, expiresAt: Date.now() + cacheTtl });
-  return rows;
+  })
+    .then((data) => {
+      const nextRows = Array.isArray(data.payments)
+        ? data.payments.filter((row) => normalizeSheetPhone(row.phone) === normalizedPhone)
+        : [];
+      paymentCache.set(normalizedPhone, { rows: nextRows, expiresAt: Date.now() + cacheTtl });
+      return nextRows;
+    })
+    .finally(() => {
+      paymentRequests.delete(normalizedPhone);
+    });
+  paymentRequests.set(normalizedPhone, request);
+  return request;
 }
