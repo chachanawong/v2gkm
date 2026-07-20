@@ -85,6 +85,10 @@ function MembershipExpiryBadge() {
     if (cached) return;
 
     let active = true;
+    const browserWindow = window as Window & typeof globalThis & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
     const load = () => {
       fetch("/api/user/membership-status", {
         headers: { Authorization: `Bearer ${token}` },
@@ -110,16 +114,22 @@ function MembershipExpiryBadge() {
         });
     };
 
-    const idle = "requestIdleCallback" in window
-      ? window.requestIdleCallback(load, { timeout: 2000 })
-      : window.setTimeout(load, 600);
+    let idleId: number | null = null;
+    let timeoutId: ReturnType<typeof window.setTimeout> | null = null;
+
+    if (browserWindow.requestIdleCallback) {
+      idleId = browserWindow.requestIdleCallback(load, { timeout: 2000 });
+    } else {
+      timeoutId = globalThis.setTimeout(load, 600);
+    }
 
     return () => {
       active = false;
-      if ("cancelIdleCallback" in window && typeof idle === "number") {
-        window.cancelIdleCallback(idle);
-      } else {
-        window.clearTimeout(idle as number);
+      if (browserWindow.cancelIdleCallback && idleId !== null) {
+        browserWindow.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) {
+        globalThis.clearTimeout(timeoutId);
       }
     };
   }, [cached, token]);

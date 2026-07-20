@@ -205,14 +205,13 @@ function normalizeSheetItem(item: Record<string, unknown>) {
 
 function normalizePlaylistItems(value: unknown): KnowledgePlaylistItem[] {
   if (!Array.isArray(value)) return [];
-  return value
-    .map((item, index) => {
-      if (!item || typeof item !== "object") return null;
+  return value.reduce<KnowledgePlaylistItem[]>((items, item, index) => {
+      if (!item || typeof item !== "object") return items;
       const record = item as Record<string, unknown>;
       const youtubeId = String(record.youtubeId ?? "").trim();
       const title = String(record.title ?? "").trim();
-      if (!youtubeId || !title) return null;
-      return {
+      if (!youtubeId || !title) return items;
+      items.push({
         id: String(record.id ?? `${youtubeId}-${index}`),
         title,
         youtubeUrl: String(record.youtubeUrl ?? `https://www.youtube.com/watch?v=${youtubeId}`),
@@ -220,9 +219,9 @@ function normalizePlaylistItems(value: unknown): KnowledgePlaylistItem[] {
         thumbnail: String(record.thumbnail ?? ""),
         position: Number(record.position ?? index),
         publishedAt: normalizeDateOnly(record.publishedAt),
-      } satisfies KnowledgePlaylistItem;
-    })
-    .filter((item): item is KnowledgePlaylistItem => Boolean(item));
+      });
+      return items;
+    }, []);
 }
 
 function mockList<T extends SheetName>(sheet: T): SheetMap[T][] {

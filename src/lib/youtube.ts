@@ -55,6 +55,17 @@ export async function getYouTubePlaylistItems(url: string) {
     return { playlistId, items: [] as KnowledgePlaylistItem[] };
   }
 
+  type YouTubePlaylistApiItem = {
+    id?: string;
+    snippet?: {
+      title?: string;
+      position?: number;
+      publishedAt?: string;
+      resourceId?: { videoId?: string };
+      thumbnails?: { high?: { url?: string }; medium?: { url?: string }; default?: { url?: string } };
+    };
+  };
+
   const items: KnowledgePlaylistItem[] = [];
   let pageToken = "";
 
@@ -70,22 +81,12 @@ export async function getYouTubePlaylistItems(url: string) {
     if (!response.ok) break;
 
     const data = await response.json();
-    const nextItems = Array.isArray(data.items) ? data.items : [];
+    const nextItems: YouTubePlaylistApiItem[] = Array.isArray(data.items) ? data.items : [];
     items.push(
-      ...nextItems
-        .map((item: {
-          id?: string;
-          snippet?: {
-            title?: string;
-            position?: number;
-            publishedAt?: string;
-            resourceId?: { videoId?: string };
-            thumbnails?: { high?: { url?: string }; medium?: { url?: string }; default?: { url?: string } };
-          };
-        }) => {
+      ...nextItems.reduce<KnowledgePlaylistItem[]>((playlistItems, item) => {
           const youtubeId = item.snippet?.resourceId?.videoId ?? "";
-          if (!youtubeId) return null;
-          return {
+          if (!youtubeId) return playlistItems;
+          playlistItems.push({
             id: item.id ?? `${playlistId}-${youtubeId}`,
             title: item.snippet?.title?.trim() || `Video ${Number(item.snippet?.position ?? 0) + 1}`,
             youtubeUrl: `https://www.youtube.com/watch?v=${youtubeId}&list=${playlistId}`,
@@ -97,9 +98,9 @@ export async function getYouTubePlaylistItems(url: string) {
               ?? getYouTubeThumbnail(`https://www.youtube.com/watch?v=${youtubeId}`),
             position: Number(item.snippet?.position ?? items.length),
             publishedAt: item.snippet?.publishedAt?.slice(0, 10),
-          } satisfies KnowledgePlaylistItem;
-        })
-        .filter((item): item is KnowledgePlaylistItem => Boolean(item)),
+          });
+          return playlistItems;
+        }, []),
     );
 
     pageToken = String(data.nextPageToken ?? "");
