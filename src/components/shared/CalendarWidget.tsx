@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, ChevronLeft, ChevronRight, MapPin, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getUserToken, useStoredMembership } from "@/lib/client-session";
 import type { Event } from "@/lib/types";
 
@@ -68,6 +68,7 @@ export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | 
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [events, setEvents] = useState<Event[]>([]);
+  const [selectedDate, setSelectedDate] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const membership = useStoredMembership();
 
@@ -99,24 +100,17 @@ export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | 
   const todayStr = isoToBangkokDateStr(today.toISOString());
 
   // Group events by startDate (day string)
-  const eventsByDate = new Map<string, Event[]>();
-  events.forEach((ev) => {
-    const ds = isoToBangkokDateStr(ev.startDate);
-    if (!ds) return;
-    const existing = eventsByDate.get(ds) ?? [];
-    existing.push(ev);
-    eventsByDate.set(ds, existing);
-  });
-
-  // Events in this calendar month
-  const monthYear = String(year);
-  const monthNumber = String(monthIdx + 1).padStart(2, "0");
-  const monthEvents = events
-    .filter((ev) => {
-      const parts = getBangkokDateParts(ev.startDate);
-      return parts?.year === monthYear && parts.month === monthNumber;
-    })
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  const eventsByDate = useMemo(() => {
+    const groupedEvents = new Map<string, Event[]>();
+    events.forEach((ev) => {
+      const ds = isoToBangkokDateStr(ev.startDate);
+      if (!ds) return;
+      const existing = groupedEvents.get(ds) ?? [];
+      existing.push(ev);
+      groupedEvents.set(ds, existing);
+    });
+    return groupedEvents;
+  }, [events]);
 
   // Upcoming events count (badge on button)
   const upcomingCount = events.filter((ev) => isUpcomingEvent(ev, today)).length;
@@ -124,6 +118,23 @@ export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | 
   function dayStr(d: number) {
     return `${year}-${String(monthIdx + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   }
+
+  const monthPrefix = `${year}-${String(monthIdx + 1).padStart(2, "0")}-`;
+  const monthEventDates = Array.from(eventsByDate.keys())
+    .filter((date) => date.startsWith(monthPrefix))
+    .sort();
+  const activeSelectedDate = selectedDate.startsWith(monthPrefix)
+    ? selectedDate
+    : todayStr.startsWith(monthPrefix)
+      ? todayStr
+      : monthEventDates[0] ?? `${monthPrefix}01`;
+
+  const selectedEvents = (eventsByDate.get(activeSelectedDate) ?? [])
+    .slice()
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  const selectedDayLabel = activeSelectedDate
+    ? `${activeSelectedDate.slice(8)}/${activeSelectedDate.slice(5, 7)}/${activeSelectedDate.slice(0, 4)}`
+    : "";
 
   return (
     <div className={isPanel ? "cal-widget cal-widget-panel" : "cal-widget"} ref={ref}>
@@ -178,30 +189,33 @@ export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | 
               const d = i + 1;
               const ds = dayStr(d);
               const isToday = ds === todayStr;
+              const isSelected = ds === activeSelectedDate;
               const dayEvents = eventsByDate.get(ds) ?? [];
               const hasEvent = dayEvents.length > 0;
               // Pick first event type color for dot
               const dotColor = hasEvent ? (EVENT_TYPE_COLOR[dayEvents[0].eventType] ?? "var(--primary)") : undefined;
               return (
-                <div
+                <button
+                  type="button"
                   key={d}
-                  className={["cal-day", isToday ? "today" : "", hasEvent ? "has-event" : ""].filter(Boolean).join(" ")}
+                  className={["cal-day", isToday ? "today" : "", isSelected ? "selected" : "", hasEvent ? "has-event" : ""].filter(Boolean).join(" ")}
                   title={hasEvent ? dayEvents.map((e) => e.title).join(", ") : undefined}
+                  onClick={() => setSelectedDate(ds)}
                 >
                   {d}
                   {hasEvent ? <span className="cal-dot" style={dotColor ? { background: dotColor } : undefined} /> : null}
-                </div>
+                </button>
               );
             })}
           </div>
 
-          {monthEvents.length > 0 ? (
+          {selectedEvents.length > 0 ? (
             <div className="cal-events">
               <div className="cal-events-head">
-                <p className="cal-events-label">กิจกรรมในเดือนนี้</p>
+                <p className="cal-events-label">กิจกรรมวันที่ {selectedDayLabel}</p>
                 <span className="cal-upcoming-count">{upcomingCount} upcoming</span>
               </div>
-              {monthEvents.map((ev) => (
+              {selectedEvents.map((ev) => (
                 <div className="cal-event-row" key={ev.id}>
                   <span
                     className="cal-event-date"
@@ -231,10 +245,10 @@ export function CalendarWidget({ variant = "compact" }: { variant?: "compact" | 
           ) : (
             <div className="cal-events">
               <div className="cal-events-head">
-                <p className="cal-events-label">กิจกรรมในเดือนนี้</p>
+                <p className="cal-events-label">กิจกรรมวันที่ {selectedDayLabel}</p>
                 <span className="cal-upcoming-count">{upcomingCount} upcoming</span>
               </div>
-              <p style={{ fontSize: 11, color: "var(--secondary)", textAlign: "center", padding: "8px 0" }}>ไม่มีกิจกรรมในเดือนนี้</p>
+              <p style={{ fontSize: 11, color: "var(--secondary)", textAlign: "center", padding: "8px 0" }}>ไม่มีกิจกรรมในวันที่เลือก</p>
             </div>
           )}
         </div>

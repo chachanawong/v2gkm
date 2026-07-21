@@ -277,9 +277,18 @@ img { object-fit: cover; }
   font-size: 12px;
   border-radius: var(--radius-sm);
   color: var(--on-background);
-  cursor: default;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
+.cal-day:hover { background: var(--surface-container); }
 .cal-day.today {
+  background: var(--on-background);
+  color: var(--on-primary);
+  font-weight: 700;
+}
+.cal-day.selected {
   background: var(--on-background);
   color: var(--on-primary);
   font-weight: 700;
@@ -293,7 +302,8 @@ img { object-fit: cover; }
   border-radius: 50%;
   background: var(--primary);
 }
-.cal-day.today .cal-dot { background: var(--on-primary); }
+.cal-day.today .cal-dot,
+.cal-day.selected .cal-dot { background: var(--on-primary); }
 .cal-events {
   border-top: 1px solid var(--outline-variant);
   padding: 10px 14px 12px;
