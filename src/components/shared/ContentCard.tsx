@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useState } from "react";
 import { normalizeImageUrl } from "@/lib/normalize";
 import { Badge } from "../ui/Badge";
@@ -28,7 +28,6 @@ export function ContentCard({
   onClick?: () => void;
 }) {
   const normalizedImage = normalizeImageUrl(image);
-  const [imageFailed, setImageFailed] = useState(false);
   const body = (
     <article
       className={onClick ? "content-card content-card-clickable" : "content-card"}
@@ -42,17 +41,15 @@ export function ContentCard({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      {normalizedImage && !imageFailed ? (
-        <div className="card-image" style={imageAspect ? { aspectRatio: imageAspect } : undefined}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={normalizedImage}
-            alt={title}
-            onError={() => setImageFailed(true)}
-            style={imageFit ? { objectFit: imageFit } : undefined}
-          />
-        </div>
-      ) : normalizedImage ? <div className="card-image image-placeholder" /> : null}
+      {normalizedImage ? (
+        <CardImage
+          key={normalizedImage}
+          src={normalizedImage}
+          alt={title}
+          imageAspect={imageAspect}
+          imageFit={imageFit}
+        />
+      ) : null}
       <div className="card-body">
         <div className="card-title-row">
           <h3>{title}</h3>
@@ -64,6 +61,40 @@ export function ContentCard({
     </article>
   );
   return href ? <Link href={href}>{body}</Link> : body;
+}
+
+function CardImage({
+  src,
+  alt,
+  imageAspect,
+  imageFit,
+}: {
+  src: string;
+  alt: string;
+  imageAspect?: string;
+  imageFit?: "cover" | "contain";
+}) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageStyle: CSSProperties | undefined = imageFit ? { objectFit: imageFit } : undefined;
+
+  if (imageFailed) {
+    return <div className="card-image image-placeholder" style={imageAspect ? { aspectRatio: imageAspect } : undefined} />;
+  }
+
+  return (
+    <div className={imageLoaded ? "card-image is-loaded" : "card-image"} style={imageAspect ? { aspectRatio: imageAspect } : undefined}>
+      {!imageLoaded ? <span className="skeleton-wave card-image-skeleton" aria-hidden="true" /> : null}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={() => setImageLoaded(true)}
+        onError={() => setImageFailed(true)}
+        style={imageStyle}
+      />
+    </div>
+  );
 }
 
 export function VisibilityBadge({ value }: { value: string }) {

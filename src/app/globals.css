@@ -1082,13 +1082,13 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
 }
 /* Rise-up entrance animation for cards */
-.home-grid .card-button {
+.home-grid > * {
   animation: rise-up 0.38s ease both;
 }
-.home-grid .card-button:nth-child(1) { animation-delay: 0.04s; }
-.home-grid .card-button:nth-child(2) { animation-delay: 0.10s; }
-.home-grid .card-button:nth-child(3) { animation-delay: 0.16s; }
-.home-grid .card-button:nth-child(4) { animation-delay: 0.22s; }
+.home-grid > *:nth-child(1) { animation-delay: 0.04s; }
+.home-grid > *:nth-child(2) { animation-delay: 0.10s; }
+.home-grid > *:nth-child(3) { animation-delay: 0.16s; }
+.home-grid > *:nth-child(4) { animation-delay: 0.22s; }
 .content-card {
   height: 100%;
   grid-template-rows: auto minmax(0, 1fr);
@@ -1120,6 +1120,11 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
   background: var(--surface-low);
   border-radius: var(--radius) var(--radius) 0 0;
   overflow: hidden;
+}
+.card-image-skeleton {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
 }
 .card-body,
 .profile-card-body {
@@ -1156,11 +1161,18 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
   gap: 6px;
   width: 100%;
 }
+.knowledge-card-meta-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 .knowledge-card-meta-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  min-width: 0;
 }
 .knowledge-card-date {
   display: block;
@@ -1171,15 +1183,10 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
 .knowledge-card-shell {
   height: 100%;
 }
-.knowledge-card-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: auto;
-  padding-top: 4px;
-}
 .knowledge-card-youtube-link {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
 }
 .knowledge-card-youtube-link .btn-sm {
   min-height: 30px;
@@ -1303,7 +1310,10 @@ h1 { font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 7
   height: 100%;
   display: block;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.24s ease;
 }
+.card-image.is-loaded > img { opacity: 1; }
 .image-placeholder {
   min-height: 72px;
   background: var(--surface-low);

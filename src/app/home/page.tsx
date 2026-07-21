@@ -285,28 +285,27 @@ export default function HomePage() {
                 imageFit="contain"
                 meta={(
                   <div className="knowledge-card-meta">
-                    <div className="knowledge-card-meta-tags">
-                      <MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="knowledge" />
+                    <div className="knowledge-card-meta-top">
+                      <div className="knowledge-card-meta-tags">
+                        <MasterCategoryPills categories={data.categories} itemCategories={item.categories} type="knowledge" />
+                      </div>
+                      <a
+                        href={item.youtubeUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="knowledge-card-youtube-link"
+                        aria-label={`เปิด ${item.title} บน YouTube`}
+                      >
+                        <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>
+                          YouTube
+                        </Button>
+                      </a>
                     </div>
                     <span className="knowledge-card-date">{item.uploadDate}</span>
                   </div>
                 )}
                 imageAspect={HOME_LEARNING_IMAGE_ASPECT}
-              >
-                <div className="knowledge-card-footer">
-                  <a
-                    href={item.youtubeUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="knowledge-card-youtube-link"
-                    aria-label={`เปิด ${item.title} บน YouTube`}
-                  >
-                    <Button size="sm" variant="secondary" icon={<ExternalLink size={14} />}>
-                      YouTube
-                    </Button>
-                  </a>
-                </div>
-              </ContentCard>
+              />
             </div>
           )) : <EmptyState />}
         </HomeSection>
